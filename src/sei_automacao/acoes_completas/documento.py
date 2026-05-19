@@ -3,6 +3,8 @@ from sei_automacao.documento.excluir_doc import selecionar_excluir_doc, confirma
 from sei_automacao.documento.inserir_bloco_ass import selecionar_inserir_bloco_ass, seleciona_bloco_ass
 from sei_automacao.genericos.botoes import clicar_salvar_sbmSalvar, clicar_incluir_sbmIncluir
 from selenium import webdriver
+from sei_automacao.utils.trocar_iframe import trocar_iframe
+
 
 
 def cancelar_doc(
@@ -26,5 +28,6 @@ def inserir_bloco_ass(
     num_bloco: str
 ):
     selecionar_inserir_bloco_ass(driver)
+    trocar_iframe(driver, "ifrVisualizacao")
     seleciona_bloco_ass(driver, num_bloco)
     clicar_incluir_sbmIncluir(driver)

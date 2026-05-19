@@ -18,5 +18,5 @@ def efetuar_login(driver: webdriver.Chrome, usuario: str, senha: str, orgao: str
     select_orgao = Select(driver.find_element(By.ID, 'selOrgao'))
     select_orgao.select_by_visible_text(orgao)
 
-    botao_acessar = driver.find_element(By.ID, 'Acessar')
+    botao_acessar = driver.find_element(By.ID, 'sbmAcessar')
     botao_acessar.click()

@@ -8,5 +8,9 @@ def acessar_processo(driver: webdriver.Chrome, num_processo: str):
     input_pesquisa = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.ID, 'txtPesquisaRapida'))
     )
-    input_pesquisa.send_keys(num_processo)
+    driver.execute_script(
+        "arguments[0].value = arguments[1];",
+        input_pesquisa,
+        num_processo
+    )
     input_pesquisa.submit()    

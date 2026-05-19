@@ -6,6 +6,7 @@ from sei_automacao.processo.adicionar_marcador import clicar_img_gerenciar_marca
 from sei_automacao.processo.encaminhar_processo import clicar_enviar_processo, preencher_unidade, selecionar_manter_aberto
 from sei_automacao.processo.enviar_email import clicar_img_enviar_email, preenche_dados_email_envia_fecha_alerta
 from sei_automacao.processo.concluir_processo import clicar_img_concluir_processo
+from sei_automacao.utils.trocar_iframe import trocar_iframe
 
 def incluir_doc_externo(
     driver: webdriver.Chrome,
@@ -18,7 +19,9 @@ def incluir_doc_externo(
     hipotese_legal: str = ""
 ):
     clicar_incluir_doc(driver)
+    trocar_iframe(driver, "ifrVisualizacao")
     selecionar_tipo_doc(driver, "Externo")
+
     preencher_metadados_doc_externo(
         driver,
         tipo_doc=tipo_doc,
@@ -42,6 +45,7 @@ def incluir_doc_sei_simples(
     nome: str = ""
 ):
     clicar_incluir_doc(driver)
+    trocar_iframe(driver, "ifrVisualizacao")
     selecionar_tipo_doc(driver, tipo_doc)
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)
@@ -60,6 +64,7 @@ def incluir_doc_sei_memo(
     nome: str = ""
 ):
     clicar_incluir_doc(driver)
+    trocar_iframe(driver, "ifrVisualizacao")
     selecionar_tipo_doc(driver, tipo_doc)
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)

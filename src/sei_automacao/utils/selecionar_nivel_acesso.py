@@ -15,12 +15,23 @@ def selecionar_nivel_acesso(driver: webdriver.Chrome, nivel_acesso: str, hipotes
         id_nivel_acesso == "divOptSigiloso"
     else:
         raise Exception(f"Nivel de acesso '{nivel_acesso}' inexistente ou não implementado")
-    
-    input_nivel_acesso = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.XPATH, f"//*[@id='{id_nivel_acesso}']/div/label"))
-    )
-    input_nivel_acesso.click()
-    
+        
+    try:
+        for _ in range(5):
+            try:
+                input_nivel_acesso = WebDriverWait(driver, 20).until(
+                    EC.presence_of_element_located((By.XPATH, f"//*[@id='{id_nivel_acesso}']/div/label"))
+                )
+                input_nivel_acesso.click()
+                
+                break
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao selecionar o nivel de acesso. Recarregando e tentando novamente...")
+                
+    # 4. Se falhar todas as tentativas:
+    except:
+        raise Exception("Não foi possível selecionar o nivel de acesso após várias tentativas (stale repetido).")
+
     if not nivel_acesso == "Público":
         if hipotese_legal == "":
             raise Exception("Hipotese Legal não informada")
@@ -32,3 +43,19 @@ def selecionar_nivel_acesso(driver: webdriver.Chrome, nivel_acesso: str, hipotes
         
         select_hip_legal = Select(driver.find_element(By.ID, "selHipoteseLegal"))
         select_hip_legal.select_by_visible_text(hipotese_legal)
+        
+        try:
+            for _ in range(5):
+                try:
+                    select_hip_legal = Select(driver.find_element(By.ID, "selHipoteseLegal"))
+                    select_hip_legal.select_by_visible_text(hipotese_legal)
+                    
+                    break
+
+                except StaleElementReferenceException:
+                    print("Elemento ficou stale ao selecionar a hipotese legal. Recarregando e tentando novamente...")
+
+        # 4. Se falhar todas as tentativas:
+        except:
+            raise Exception("Não foi possível selecionar a hipotese legal após várias tentativas (stale repetido).")
+

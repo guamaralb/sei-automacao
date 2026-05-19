@@ -18,10 +18,16 @@ def clicar_incluir_doc(driver: webdriver.Chrome):
 
 
 def selecionar_tipo_doc(driver: webdriver.Chrome, tipo: str):
-    a_exibir_todos_tipos_doc = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.ID, "ancExibirSeries"))   
-    )
-    a_exibir_todos_tipos_doc.click()
+    try:
+        a_exibir_menos_tipos_doc = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.XPATH, "//img[@alt='Exibir apenas os tipos já utilizados pela unidade']"))   
+        )
+    
+    except:
+        a_exibir_todos_tipos_doc = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.XPATH, "//img[@alt='Exibir todos os tipos']"))   
+        )
+        a_exibir_todos_tipos_doc.click()
     
     xpath_tipo_doc = ""
     
@@ -42,7 +48,7 @@ def selecionar_tipo_doc(driver: webdriver.Chrome, tipo: str):
             elemento.click()
             return  # sucesso
         except StaleElementReferenceException:
-            print("Elemento ficou stale. Recarregando e tentando novamente...")
+            print("Elemento ficou stale ao escolher o tipo de documento. Recarregando e tentando novamente...")
 
     # 4. Se falhar todas as tentativas:
     raise Exception("Não foi possível clicar no tipo de documento após várias tentativas (stale repetido).")
@@ -58,35 +64,94 @@ def preencher_metadados_doc_externo(
     nivel_acesso: str,
     hipotese_legal: str = ""
 ):
-    input_data = WebDriverWait(driver, 20).until(
-        EC.element_to_be_clickable(driver.find_element(By.ID, 'txtDataElaboracao'))
-    )
-    input_data.send_keys(data)
-    
+    try:
+        for _ in range(5):
+            try:
+                input_data = WebDriverWait(driver, 20).until(
+                    EC.element_to_be_clickable((By.ID, 'txtDataElaboracao'))
+                )
+                input_data.send_keys(data)
+                
+                break
+
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao preencher a data do documento. Recarregando e tentando novamente...")
+
+    except:
+        raise Exception("Não foi possível preencher a data do documento após várias tentativas (stale repetido).")
+
     # Seleciona tipo de documento
-    select_tipo_doc = Select(driver.find_element(By.ID, 'selSerie'))
-    select_tipo_doc.select_by_visible_text(tipo_doc)
-    
+    try:
+        for _ in range(5):
+            try:
+                select_tipo_doc = Select(driver.find_element(By.ID, 'selSerie'))
+                select_tipo_doc.select_by_visible_text(tipo_doc)
+                
+                break
+
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao selecionar o tipo de documento. Recarregando e tentando novamente...")
+
+    except:
+        raise Exception("Não foi possível selecionar o tipo de documento após várias tentativas (stale repetido).")
+
     # Preenche número
-    input_num = driver.find_element(By.ID, 'txtNumero')
-    input_num.send_keys(num)
-    
+    try:
+        for _ in range(5):
+            try:
+                time.sleep(2)
+                input_num = driver.find_element(By.ID, 'txtNumero')
+                input_num.send_keys(num)
+                time.sleep(2)
+                
+                break
+
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao preencher o numero do documento. Recarregando e tentando novamente...")
+
+    except:
+        raise Exception("Não foi possível preencher o numero do documento após várias tentativas (stale repetido).")
+
     # Seleciona formato
     formato_XPATH = ''
     if formato == 'Nato-digital':
         formato_XPATH = '//*[@id="divOptNato"]/div/label'
     else:
         raise Exception(f'Opção de formato ainda não implementada: {formato}')
-    input_formato = driver.find_element(By.XPATH, formato_XPATH)
-    input_formato.click()
     
+    try:
+        for _ in range(5):
+            try:
+                input_formato = driver.find_element(By.XPATH, formato_XPATH)
+                input_formato.click()
+                
+                break
+
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao selecionar o formato do documento. Recarregando e tentando novamente...")
+
+    except:
+        raise Exception("Não foi possível selecionar o formato do documento após várias tentativas (stale repetido).")
+
     # Seleciona nivel de acesso
     selecionar_nivel_acesso(driver, nivel_acesso, hipotese_legal)
         
     # Anexa arquivo
-    input_arq = driver.find_element(By.ID, 'filArquivo')
-    input_arq.send_keys(caminho_anexo)
-    
+    try:
+        for _ in range(5):
+            try:
+                input_arq = driver.find_element(By.ID, 'filArquivo')
+                input_arq.send_keys(caminho_anexo)
+                
+                break
+
+            except StaleElementReferenceException:
+                print("Elemento ficou stale ao anexar o arquivo. Recarregando e tentando novamente...")
+
+    # 4. Se falhar todas as tentativas:
+    except:
+        raise Exception("Não foi possível anexar o arquivo após várias tentativas (stale repetido).")
+
     # Espera o arquivo anexo carregar
     nome_arq = os.path.basename(caminho_anexo)
     
@@ -229,11 +294,17 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Chrome, vocativo: str, desti
         f"arguments[0].innerHTML = arguments[0].innerHTML.replace('@vocativo_destinatario@', '{vocativo}');", p_vocativo
     )
     
-    p_inserir_txt = driver.find_element(By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]")
-    driver.execute_script(
-        f"arguments[0].innerHTML = arguments[0].innerHTML.replace('[ Inserir Texto ]', ' ');", p_inserir_txt
+    p_inserir_txt = driver.find_element(
+        By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]"
     )
-    p_inserir_txt.send_keys(texto_principal)
+
+    driver.execute_script(
+        """
+        arguments[0].innerHTML = arguments[1];
+        """,
+        p_inserir_txt,
+        texto_principal
+    )
     
     # Clica e ativa a barra de ferramentas do editor
     driver.switch_to.default_content()
