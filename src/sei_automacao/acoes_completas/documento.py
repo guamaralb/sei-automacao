@@ -6,27 +6,26 @@ from selenium import webdriver
 from sei_automacao.utils.trocar_iframe import trocar_iframe
 
 
-
 def cancelar_doc(
-    driver: webdriver.Chrome,
+    driver: webdriver.Remote,
     motivo: str
-):
+) -> None:
     selecionar_cancelar_doc(driver)
     preencher_motivo_cancelamento(driver, motivo)
     clicar_salvar_sbmSalvar(driver)
-    
+
 
 def excluir_doc(
-    driver: webdriver.Chrome
-):
+    driver: webdriver.Remote
+) -> None:
     selecionar_excluir_doc(driver)
     confirmar_exclusao_doc(driver)
 
 
 def inserir_bloco_ass(
-    driver: webdriver.Chrome,
+    driver: webdriver.Remote,
     num_bloco: str
-):
+) -> None:
     selecionar_inserir_bloco_ass(driver)
     trocar_iframe(driver, "ifrVisualizacao")
     seleciona_bloco_ass(driver, num_bloco)
