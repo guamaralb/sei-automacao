@@ -168,7 +168,11 @@ def enviar_email(
         nivel_acesso=nivel_acesso,
         hipotese_legal=hipotese_legal,
     )
-
+    driver.switch_to.default_content()
+    trocar_iframe(driver=driver, iframe='ifrArvore')
+    espera_documento_aparecer_arvore(driver, tipo_doc="E-mail")
+    driver.switch_to.default_content()
+    time.sleep(1)
 
 def concluir_processo(driver: webdriver.Remote) -> None:
     clicar_img_concluir_processo(driver)

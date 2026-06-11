@@ -86,21 +86,20 @@ def preenche_dados_email_envia(
         EC.element_to_be_clickable((By.ID, "txaMensagem"))
     )
 
-    input_mensagem.clear()
-    input_mensagem.send_keys(corpo_email)
+    driver.execute_script(
+        "arguments[0].value = arguments[1];",
+        input_mensagem,
+        corpo_email
+    )
     
     # Popup as vezes aparece por não identificar a msg no corpo
-    fechar_popup_basico(driver, msg="Informe a Mensagem.")
-    time.sleep(5)
+    fechar_popup_basico(driver, msg_contains="Informe a Mensagem.")
     
     selecionar_nivel_acesso(driver=driver, nivel_acesso=nivel_acesso)
-    time.sleep(5)
     
     # Envia email
     clicar_enviar_btnEnviar(driver)
-    time.sleep(5)
 
-    fechar_popup_basico(driver)
-    time.sleep(5)
+    fechar_popup_basico(driver, msg_contains="E-mail SEI enviado.")
 
     driver.switch_to.window(janela_principal)
