@@ -309,10 +309,14 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
     driver.switch_to.window(janela_principal)
 
 
-def espera_documento_aparecer_arvore(driver: webdriver.Remote, tipo_doc: str, num: str) -> None:
+def espera_documento_aparecer_arvore(driver: webdriver.Remote, tipo_doc: str, num: str = None) -> None:
+    nome_arvore: str = None
     
-    nome_arvore: str = f'{tipo_doc} {num}'
-
+    if num:        
+        nome_arvore = f'{tipo_doc} {num}'
+    else:
+        nome_arvore = tipo_doc
+    
     WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{nome_arvore}')]"))
     )

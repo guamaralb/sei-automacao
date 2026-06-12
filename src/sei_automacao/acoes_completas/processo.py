@@ -36,7 +36,7 @@ def incluir_doc_externo(
     path_anexo: Path,
     nivel_acesso: str,
     hipotese_legal: str = "",
-    fecha_alerta: bool = False
+    fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
     trocar_iframe(driver, "ifrConteudoVisualizacao")
     clicar_incluir_doc(driver)
@@ -56,8 +56,8 @@ def incluir_doc_externo(
     time.sleep(1)
     clicar_salvar_btnSalvar(driver)
     
-    if fecha_alerta:
-        fechar_popup_basico(driver)
+    if fecha_alerta_doc_ja_existe:
+        fechar_popup_basico(driver, msg_contains="Já existe um documento")
         
     driver.switch_to.default_content()
     trocar_iframe(driver=driver, iframe='ifrArvore')
@@ -73,7 +73,7 @@ def incluir_doc_sei_simples(
     nivel_acesso: str,
     hipotese_legal: str = "",
     nome: str = "",
-    fecha_alerta: bool = False
+    fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
     trocar_iframe(driver, "ifrConteudoVisualizacao")
     clicar_incluir_doc(driver)
@@ -81,8 +81,8 @@ def incluir_doc_sei_simples(
     selecionar_tipo_doc(driver, tipo_doc)
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)
-    if fecha_alerta:
-        fechar_popup_basico(driver)
+    if fecha_alerta_doc_ja_existe:
+        fechar_popup_basico(driver, msg_contains="Já existe um documento")
     inserir_conteudo_doc_sei_simples(driver, texto)
     driver.switch_to.default_content()
     trocar_iframe(driver=driver, iframe='ifrArvore')
@@ -100,7 +100,7 @@ def incluir_doc_sei_memo(
     nivel_acesso: str,
     hipotese_legal: str = "",
     nome: str = "",
-    fecha_alerta: bool = False
+    fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
     trocar_iframe(driver, "ifrConteudoVisualizacao")
     clicar_incluir_doc(driver)
@@ -108,8 +108,8 @@ def incluir_doc_sei_memo(
     selecionar_tipo_doc(driver, tipo='Memorando')
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)
-    if fecha_alerta:
-        fechar_popup_basico(driver)
+    if fecha_alerta_doc_ja_existe:
+        fechar_popup_basico(driver, msg_contains="Já existe um documento")
     inserir_conteudo_doc_sei_memo(driver, vocativo, destinatario_nome, assunto, texto_principal)
     driver.switch_to.default_content()
     trocar_iframe(driver=driver, iframe='ifrArvore')
@@ -155,7 +155,7 @@ def enviar_email(
     corpo_email: str,
     nivel_acesso: str,
     hipotese_legal: str = "",
-    fecha_alerta: bool = False
+    fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
     trocar_iframe(driver, "ifrConteudoVisualizacao")
     clicar_img_enviar_email(driver)

@@ -12,8 +12,9 @@ from sei_automacao.genericos.botoes import clicar_enviar_btnEnviar
 from sei_automacao.genericos.popup import fechar_popup_basico
 
 def identifica_abertura_nova_janela(driver: webdriver.Remote, num_janelas_esperadas: int = 2) -> bool:
+
 	WebDriverWait(driver, 20).until(
 		lambda d: len(d.window_handles) == num_janelas_esperadas
 	)
- 
+
 	return True

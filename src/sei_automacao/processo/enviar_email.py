@@ -100,6 +100,6 @@ def preenche_dados_email_envia(
     # Envia email
     clicar_enviar_btnEnviar(driver)
 
-    fechar_popup_basico(driver, msg_contains="E-mail SEI enviado.")
+    fechar_popup_basico(driver, msg_contains="E-mail enviado.")
 
     driver.switch_to.window(janela_principal)
