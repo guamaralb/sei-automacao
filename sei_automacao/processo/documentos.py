@@ -11,6 +11,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import StaleElementReferenceException
 
 from sei_automacao.utils.acesso import selecionar_nivel_acesso
+from sei_automacao.core.iframes import trocar_iframe
 
 
 def clicar_incluir_doc(driver: webdriver.Remote) -> None:
@@ -215,10 +216,7 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
             driver.switch_to.window(handle)
             break
 
-    iframe_enderecamento: WebElement = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.XPATH, "//iframe[@title='Endereçamento']"))
-    )
-    driver.switch_to.frame(iframe_enderecamento)
+    trocar_iframe(driver, "Corpo do Texto")
 
     p_cargo: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//p[contains(text(), '@cargo_destinatario@')]"))
@@ -232,24 +230,12 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
         f"arguments[0].innerHTML = arguments[0].innerHTML.replace('@nome_destinatario@', '{destinatario_nome}');", p_nome
     )
 
-    driver.switch_to.default_content()
-
-    iframe_assunto: WebElement = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.XPATH, "//iframe[@title='Assunto']"))
-    )
-    driver.switch_to.frame(iframe_assunto)
-
     strong_assunto: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//p[strong[contains(text(), 'Assunto:')]]"))
     )
-    strong_assunto.send_keys(assunto)
-
-    driver.switch_to.default_content()
-
-    iframe_corpo: WebElement = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.XPATH, "//iframe[@title='Corpo do Texto']"))
+    driver.execute_script(
+        f"arguments[0].innerHTML = arguments[0].innerHTML.replace('Assunto:', 'Assunto: {assunto}');", strong_assunto
     )
-    driver.switch_to.frame(iframe_corpo)
 
     p_vocativo: WebElement = driver.find_element(By.XPATH, "//p[contains(text(), '@vocativo_destinatario@')]")
     driver.execute_script(
@@ -274,14 +260,16 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
 
     button_salvar_doc: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located(
-            (By.XPATH, "//a[@id='cke_331' and @title='Salvar (Ctrl+Alt+S)']")
+            (By.XPATH, "//a[contains(@class, 'cke_button__save')]")
         )
     )
 
     driver.execute_script("arguments[0].click();", button_salvar_doc)
 
     WebDriverWait(driver, 30).until(
-        lambda d: "cke_button_off" in d.find_element(By.ID, "cke_331").get_attribute("class")
+        lambda d: 'cke_button_disabled' in d.find_element(
+            By.CSS_SELECTOR, 'a.cke_button__save'
+        ).get_attribute('class')
     )
 
     driver.close()

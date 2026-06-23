@@ -19,9 +19,20 @@ from sei_automacao.core.buttons import (
     clicar_adicionar_btnAdicionar,
     clicar_enviar_sbmEnviar,
 )
-from sei_automacao.processo.marcadores import clicar_img_gerenciar_marcadores, selecionar_marcador, procurar_sbmSalvar
-from sei_automacao.processo.encaminhamento import clicar_enviar_processo, preencher_unidade, selecionar_manter_aberto
-from sei_automacao.processo.email import clicar_img_enviar_email, preenche_dados_email_envia
+from sei_automacao.processo.marcadores import (
+    clicar_img_gerenciar_marcadores,
+    selecionar_marcador,
+    procurar_sbmSalvar,
+)
+from sei_automacao.processo.encaminhamento import (
+    clicar_enviar_processo,
+    preencher_unidade,
+    selecionar_manter_aberto,
+)
+from sei_automacao.processo.email import (
+    clicar_img_enviar_email,
+    preenche_dados_email_envia,
+)
 from sei_automacao.processo.ciclo_de_vida import clicar_img_concluir_processo
 from sei_automacao.core.iframes import trocar_iframe
 from sei_automacao.core.popups import fechar_popup_basico
@@ -38,10 +49,11 @@ def incluir_doc_externo(
     hipotese_legal: str = "",
     fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
-    trocar_iframe(driver, "ifrConteudoVisualizacao")
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_incluir_doc(driver)
-    trocar_iframe(driver, "ifrVisualizacao")
-    selecionar_tipo_doc(driver, "Externo")
+    trocar_iframe(driver, 'ifrVisualizacao')
+    selecionar_tipo_doc(driver, 'Externo')
 
     preencher_metadados_doc_externo(
         driver,
@@ -57,10 +69,10 @@ def incluir_doc_externo(
     clicar_salvar_btnSalvar(driver)
 
     if fecha_alerta_doc_ja_existe:
-        fechar_popup_basico(driver, msg_contains="Já existe um documento")
+        fechar_popup_basico(driver, msg_contains='Já existe um documento')
 
     driver.switch_to.default_content()
-    trocar_iframe(driver=driver, iframe='ifrArvore')
+    trocar_iframe(driver, 'ifrArvore')
     espera_documento_aparecer_arvore(driver, tipo_doc, num)
     driver.switch_to.default_content()
     time.sleep(1)
@@ -75,17 +87,19 @@ def incluir_doc_sei_simples(
     nome: str = "",
     fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
-    trocar_iframe(driver, "ifrConteudoVisualizacao")
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrVisualizacao')
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_incluir_doc(driver)
-    trocar_iframe(driver, "ifrVisualizacao")
+    trocar_iframe(driver, 'ifrVisualizacao')
     selecionar_tipo_doc(driver, tipo_doc)
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)
     if fecha_alerta_doc_ja_existe:
-        fechar_popup_basico(driver, msg_contains="Já existe um documento")
+        fechar_popup_basico(driver, msg_contains='Já existe um documento')
     inserir_conteudo_doc_sei_simples(driver, texto)
     driver.switch_to.default_content()
-    trocar_iframe(driver=driver, iframe='ifrArvore')
+    trocar_iframe(driver, 'ifrArvore')
     espera_documento_aparecer_arvore(driver, tipo_doc)
     driver.switch_to.default_content()
     time.sleep(1)
@@ -102,18 +116,21 @@ def incluir_doc_sei_memo(
     nome: str = "",
     fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
-    trocar_iframe(driver, "ifrConteudoVisualizacao")
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_incluir_doc(driver)
-    trocar_iframe(driver, "ifrVisualizacao")
+    trocar_iframe(driver, 'ifrVisualizacao')
     selecionar_tipo_doc(driver, tipo='Memorando')
     preencher_metadados_doc_sei(driver, nivel_acesso, hipotese_legal, nome)
     clicar_salvar_btnSalvar(driver)
     if fecha_alerta_doc_ja_existe:
-        fechar_popup_basico(driver, msg_contains="Já existe um documento")
-    inserir_conteudo_doc_sei_memo(driver, vocativo, destinatario_nome, assunto, texto_principal)
+        fechar_popup_basico(driver, msg_contains='Já existe um documento')
+    inserir_conteudo_doc_sei_memo(
+        driver, vocativo, destinatario_nome, assunto, texto_principal
+    )
     driver.switch_to.default_content()
-    trocar_iframe(driver=driver, iframe='ifrArvore')
-    espera_documento_aparecer_arvore(driver, tipo_doc="Memorando")
+    trocar_iframe(driver, 'ifrArvore')
+    espera_documento_aparecer_arvore(driver, tipo_doc='Memorando')
     driver.switch_to.default_content()
     time.sleep(1)
 
@@ -122,14 +139,19 @@ def adicionar_marcador(
     driver: webdriver.Remote,
     marcador: str
 ) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_img_gerenciar_marcadores(driver)
+    
+    trocar_iframe(driver, 'ifrVisualizacao')
 
     if not procurar_sbmSalvar(driver):
         clicar_adicionar_btnAdicionar(driver)
 
     selecionar_marcador(driver, marcador)
-    time.sleep(2)
+    time.sleep(1)
     clicar_salvar_sbmSalvar(driver)
+    driver.switch_to.default_content()
 
 
 def encaminhar_processo(
@@ -138,6 +160,8 @@ def encaminhar_processo(
     desce_lista: int = 1,
     manter_aberto: bool = True
 ) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrVisualizacao')
     clicar_enviar_processo(driver)
     preencher_unidade(driver, unidade, desce_lista)
 
@@ -145,6 +169,7 @@ def encaminhar_processo(
         selecionar_manter_aberto(driver)
 
     clicar_enviar_sbmEnviar(driver)
+    driver.switch_to.default_content()
 
 
 def enviar_email(
@@ -157,7 +182,9 @@ def enviar_email(
     hipotese_legal: str = "",
     fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
-    trocar_iframe(driver, "ifrConteudoVisualizacao")
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrVisualizacao')
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_img_enviar_email(driver)
     preenche_dados_email_envia(
         driver=driver,
@@ -169,11 +196,14 @@ def enviar_email(
         hipotese_legal=hipotese_legal,
     )
     driver.switch_to.default_content()
-    trocar_iframe(driver=driver, iframe='ifrArvore')
-    espera_documento_aparecer_arvore(driver, tipo_doc="E-mail")
+    trocar_iframe(driver, 'ifrArvore')
+    espera_documento_aparecer_arvore(driver, tipo_doc='E-mail')
     driver.switch_to.default_content()
     time.sleep(1)
 
 
 def concluir_processo(driver: webdriver.Remote) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrVisualizacao')
     clicar_img_concluir_processo(driver)
+    driver.switch_to.default_content()

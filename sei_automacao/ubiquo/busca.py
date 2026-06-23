@@ -6,6 +6,7 @@ from selenium.webdriver.remote.webelement import WebElement
 
 
 def acessar_processo(driver: webdriver.Remote, num_processo: str) -> None:
+    driver.switch_to.default_content()
     input_pesquisa: WebElement = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.ID, 'txtPesquisaRapida'))
     )

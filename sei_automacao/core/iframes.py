@@ -15,4 +15,9 @@ def trocar_iframe(driver: webdriver.Remote, iframe: str) -> None:
                 EC.frame_to_be_available_and_switch_to_it((By.NAME, iframe))
             )
         except:
-            raise Exception(f"Iframe '{iframe}' não encontrado por ID nem por NAME")
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.frame_to_be_available_and_switch_to_it((By.XPATH, f'//iframe[@title="{iframe}"]'))
+                )
+            except:
+                raise Exception(f"Iframe '{iframe}' não encontrado por ID, NAME nem TITLE")

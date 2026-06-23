@@ -13,6 +13,7 @@ def iniciar_processo(
     nivel_acesso: str,
     hipotese_legal: str = ""
 ) -> None:
+    driver.switch_to.default_content()
     abrir_menu(driver)
     clicar_iniciar_processo(driver)
     selecionar_tipo_processo(driver, tipo_processo)
@@ -25,5 +26,6 @@ def trocar_unidade(
     driver: webdriver.Remote,
     unidade: str
 ) -> None:
+    driver.switch_to.default_content()
     acessar_pagina_trocar_unidade(driver)
     selecionar_unidade(driver, unidade)

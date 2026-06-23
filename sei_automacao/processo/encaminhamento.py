@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from sei_automacao.core.iframes import trocar_iframe
 
 
 def clicar_enviar_processo(driver: webdriver.Remote) -> None:
@@ -36,10 +37,13 @@ def selecionar_manter_aberto(driver: webdriver.Remote) -> None:
 
 
 def clicar_num_processo(driver: webdriver.Remote, num_processo: str) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver=driver, iframe='ifrArvore')
     span_num_processo: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{num_processo}')]"))
     )
     span_num_processo.click()
+    driver.switch_to.default_content()  
 
 
 def selecionar_processo_arvore(driver: webdriver.Remote, num_processo: str) -> None:

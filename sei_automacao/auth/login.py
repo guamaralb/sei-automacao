@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 
 def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str) -> None:
@@ -21,3 +22,13 @@ def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str
 
     botao_acessar: WebElement = driver.find_element(By.ID, 'sbmAcessar')
     botao_acessar.click()
+
+
+def fechar_popup_novidades(driver: webdriver.Remote) -> None:
+    try:
+        botao_fechar: WebElement = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='Fechar' and contains(@href, 'infraModalFechar')]"))
+        )
+        botao_fechar.click()
+    except TimeoutException:
+        pass
