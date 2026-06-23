@@ -1,9 +1,9 @@
-from sei_automacao.menu.abrir_menu import abrir_menu
-from sei_automacao.menu.iniciar_processo import clicar_iniciar_processo, selecionar_tipo_processo, preencher_especificacao_processo
-from sei_automacao.utils.selecionar_nivel_acesso import selecionar_nivel_acesso
-from sei_automacao.genericos.botoes import clicar_salvar_btnSalvar
-from sei_automacao.ubiquo.trocar_unidade import acessar_pagina_trocar_unidade, selecionar_unidade
 from selenium import webdriver
+
+from sei_automacao.navigation.menu import abrir_menu, clicar_iniciar_processo, selecionar_tipo_processo, preencher_especificacao_processo
+from sei_automacao.utils.acesso import selecionar_nivel_acesso
+from sei_automacao.core.buttons import clicar_salvar_btnSalvar
+from sei_automacao.ubiquo.unidade import acessar_pagina_trocar_unidade, selecionar_unidade
 
 
 def iniciar_processo(

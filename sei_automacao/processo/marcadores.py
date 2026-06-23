@@ -14,11 +14,7 @@ def clicar_img_gerenciar_marcadores(driver: webdriver.Remote) -> None:
 
 def procurar_sbmSalvar(driver: webdriver.Remote) -> bool:
     button_smbSalvar: list[WebElement] = driver.find_elements(By.ID, "sbmSalvar")
-
-    if button_smbSalvar:
-        return True
-    else:
-        return False
+    return bool(button_smbSalvar)
 
 
 def selecionar_marcador(driver: webdriver.Remote, marcador: str) -> None:

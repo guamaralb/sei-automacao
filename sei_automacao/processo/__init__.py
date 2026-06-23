@@ -4,7 +4,7 @@ from pathlib import Path
 
 from selenium import webdriver
 
-from sei_automacao.processo.incluir_doc import (
+from sei_automacao.processo.documentos import (
     clicar_incluir_doc,
     selecionar_tipo_doc,
     preencher_metadados_doc_externo,
@@ -13,18 +13,18 @@ from sei_automacao.processo.incluir_doc import (
     inserir_conteudo_doc_sei_memo,
     espera_documento_aparecer_arvore,
 )
-from sei_automacao.genericos.botoes import (
+from sei_automacao.core.buttons import (
     clicar_salvar_btnSalvar,
     clicar_salvar_sbmSalvar,
     clicar_adicionar_btnAdicionar,
     clicar_enviar_sbmEnviar,
 )
-from sei_automacao.processo.adicionar_marcador import clicar_img_gerenciar_marcadores, selecionar_marcador, procurar_sbmSalvar
-from sei_automacao.processo.encaminhar_processo import clicar_enviar_processo, preencher_unidade, selecionar_manter_aberto
-from sei_automacao.processo.enviar_email import clicar_img_enviar_email, preenche_dados_email_envia
-from sei_automacao.processo.concluir_processo import clicar_img_concluir_processo
-from sei_automacao.utils.trocar_iframe import trocar_iframe
-from sei_automacao.genericos.popup import fechar_popup_basico
+from sei_automacao.processo.marcadores import clicar_img_gerenciar_marcadores, selecionar_marcador, procurar_sbmSalvar
+from sei_automacao.processo.encaminhamento import clicar_enviar_processo, preencher_unidade, selecionar_manter_aberto
+from sei_automacao.processo.email import clicar_img_enviar_email, preenche_dados_email_envia
+from sei_automacao.processo.ciclo_de_vida import clicar_img_concluir_processo
+from sei_automacao.core.iframes import trocar_iframe
+from sei_automacao.core.popups import fechar_popup_basico
 
 
 def incluir_doc_externo(
@@ -55,16 +55,16 @@ def incluir_doc_externo(
     )
     time.sleep(1)
     clicar_salvar_btnSalvar(driver)
-    
+
     if fecha_alerta_doc_ja_existe:
         fechar_popup_basico(driver, msg_contains="Já existe um documento")
-        
+
     driver.switch_to.default_content()
     trocar_iframe(driver=driver, iframe='ifrArvore')
     espera_documento_aparecer_arvore(driver, tipo_doc, num)
     driver.switch_to.default_content()
     time.sleep(1)
-    
+
 
 def incluir_doc_sei_simples(
     driver: webdriver.Remote,
@@ -173,6 +173,7 @@ def enviar_email(
     espera_documento_aparecer_arvore(driver, tipo_doc="E-mail")
     driver.switch_to.default_content()
     time.sleep(1)
+
 
 def concluir_processo(driver: webdriver.Remote) -> None:
     clicar_img_concluir_processo(driver)

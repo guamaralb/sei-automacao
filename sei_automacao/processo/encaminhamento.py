@@ -33,3 +33,17 @@ def selecionar_manter_aberto(driver: webdriver.Remote) -> None:
         EC.element_to_be_clickable((By.CSS_SELECTOR, "label[for='chkSinManterAberto']"))
     )
     label.click()
+
+
+def clicar_num_processo(driver: webdriver.Remote, num_processo: str) -> None:
+    span_num_processo: WebElement = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{num_processo}')]"))
+    )
+    span_num_processo.click()
+
+
+def selecionar_processo_arvore(driver: webdriver.Remote, num_processo: str) -> None:
+    span_processo: WebElement = WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.XPATH, f"//span[contains(text(), '{num_processo}')]"))
+    )
+    span_processo.click()

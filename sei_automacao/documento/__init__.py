@@ -1,9 +1,14 @@
-from sei_automacao.documento.cancelar_doc import selecionar_cancelar_doc, preencher_motivo_cancelamento
-from sei_automacao.documento.excluir_doc import selecionar_excluir_doc, confirmar_exclusao_doc
-from sei_automacao.documento.inserir_bloco_ass import selecionar_inserir_bloco_ass, seleciona_bloco_ass
-from sei_automacao.genericos.botoes import clicar_salvar_sbmSalvar, clicar_incluir_sbmIncluir
 from selenium import webdriver
-from sei_automacao.utils.trocar_iframe import trocar_iframe
+
+from sei_automacao.documento.gestao import (
+    selecionar_cancelar_doc,
+    preencher_motivo_cancelamento,
+    selecionar_excluir_doc,
+    confirmar_exclusao_doc,
+)
+from sei_automacao.documento.assinatura import selecionar_inserir_bloco_ass, seleciona_bloco_ass
+from sei_automacao.core.buttons import clicar_salvar_sbmSalvar, clicar_incluir_sbmIncluir
+from sei_automacao.core.iframes import trocar_iframe
 
 
 def cancelar_doc(

@@ -7,6 +7,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
+def abrir_menu(driver: webdriver.Remote) -> None:
+    menu_lateral: WebElement = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.ID, "divInfraAreaTelaE"))
+    )
+    classes: str = menu_lateral.get_attribute("class")
+
+    if "infraAreaTelaEEscondeGrande" in classes:
+        element: WebElement | None = driver.execute_script("""
+            return document.querySelector("a#lnkInfraMenuSistema");
+        """)
+
+        if element:
+            driver.execute_script("arguments[0].scrollIntoView();", element)
+            driver.execute_script("arguments[0].click();", element)
+            return
+
+        else:
+            raise Exception("Não conseguiu abrir o menu")
+
+
 def clicar_iniciar_processo(driver: webdriver.Remote) -> None:
     for index in range(3):
         try:
@@ -15,7 +35,6 @@ def clicar_iniciar_processo(driver: webdriver.Remote) -> None:
             )
             span_iniciar_processo.click()
 
-            # Espera a página mudar
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Escolha o Tipo do Processo:')]"))
             )

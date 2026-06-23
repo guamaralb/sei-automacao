@@ -4,14 +4,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import StaleElementReferenceException
 
-from sei_automacao.genericos.botoes import clicar_enviar_btnEnviar
-from sei_automacao.genericos.popup import fechar_popup_basico
-from sei_automacao.genericos.janelas import identifica_abertura_nova_janela
-from sei_automacao.utils.selecionar_nivel_acesso import selecionar_nivel_acesso
+from sei_automacao.core.buttons import clicar_enviar_btnEnviar
+from sei_automacao.core.popups import fechar_popup_basico
+from sei_automacao.core.windows import identifica_abertura_nova_janela
+from sei_automacao.utils.acesso import selecionar_nivel_acesso
+
 
 def clicar_img_enviar_email(driver: webdriver.Remote) -> None:
     for i in range(3):
@@ -41,10 +41,8 @@ def preenche_dados_email_envia(
 ) -> None:
     janela_principal: str = driver.current_window_handle
 
-    # Espera abrir a nova janela
     identifica_abertura_nova_janela(driver)
 
-    # Troca para a nova janela
     for handle in driver.window_handles:
         if handle != janela_principal:
             driver.switch_to.window(handle)
@@ -57,7 +55,6 @@ def preenche_dados_email_envia(
     )
     time.sleep(1)
 
-    # Preenche DE
     select_de: Select = Select(
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.ID, "selDe"))
@@ -65,7 +62,6 @@ def preenche_dados_email_envia(
     )
     select_de.select_by_value(email_de)
 
-    # Preenche PARA
     input_para: WebElement = driver.find_element(By.ID, "s2id_autogen1")
 
     for email in emails_para:
@@ -77,11 +73,9 @@ def preenche_dados_email_envia(
         )
         span_para.click()
 
-    # Preenche ASSUNTO
     input_assunto: WebElement = driver.find_element(By.ID, "txtAssunto")
     input_assunto.send_keys(assunto)
-    
-    # Preenche MENSAGEM
+
     input_mensagem = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "txaMensagem"))
     )
@@ -91,13 +85,11 @@ def preenche_dados_email_envia(
         input_mensagem,
         corpo_email
     )
-    
-    # Popup as vezes aparece por não identificar a msg no corpo
+
     fechar_popup_basico(driver, msg_contains="Informe a Mensagem.")
-    
+
     selecionar_nivel_acesso(driver=driver, nivel_acesso=nivel_acesso)
-    
-    # Envia email
+
     clicar_enviar_btnEnviar(driver)
 
     fechar_popup_basico(driver, msg_contains="E-mail enviado.")

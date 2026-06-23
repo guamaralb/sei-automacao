@@ -6,6 +6,20 @@ from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.remote.webelement import WebElement
 
 
+def selecionar_cancelar_doc(driver: webdriver.Remote) -> None:
+    img_cancelar_doc: WebElement = WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.XPATH, "//img[@alt='Cancelar Documento']"))
+    )
+    img_cancelar_doc.click()
+
+
+def preencher_motivo_cancelamento(driver: webdriver.Remote, motivo: str) -> None:
+    input_motivo: WebElement = WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.ID, "txaMotivo"))
+    )
+    input_motivo.send_keys(motivo)
+
+
 def selecionar_excluir_doc(driver: webdriver.Remote) -> None:
     img_excluir_doc: WebElement = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.XPATH, "//img[@alt='Excluir']"))

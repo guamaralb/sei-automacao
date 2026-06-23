@@ -34,7 +34,6 @@ def selecionar_nivel_acesso(driver: webdriver.Remote, nivel_acesso: str, hipotes
         if hipotese_legal == "":
             raise Exception("Hipotese Legal não informada")
 
-        # Espera carregar mais opções dentro do select
         WebDriverWait(driver, 15).until(
             lambda d: len(Select(d.find_element(By.ID, "selHipoteseLegal")).options) > 1
         )

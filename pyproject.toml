@@ -16,7 +16,7 @@ dependencies = [
 
 [tool.poetry]
 packages = [
-    { include = "sei_automacao", from = "src" }
+    { include = "sei_automacao" }
 ]
 
 [build-system]

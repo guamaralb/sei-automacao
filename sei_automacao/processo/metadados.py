@@ -18,3 +18,10 @@ def alterar_especificacao_processo(driver: webdriver.Remote, novo_nome: str) -> 
     )
     input_espec.clear()
     input_espec.send_keys(novo_nome)
+
+
+def capturar_num_processo(driver: webdriver.Remote) -> str:
+    span_num_processo: WebElement = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.XPATH, "//span[@class='infraArvoreNoSelecionado']"))
+    )
+    return span_num_processo.text

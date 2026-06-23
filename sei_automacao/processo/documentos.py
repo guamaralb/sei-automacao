@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import StaleElementReferenceException
 
-from sei_automacao.utils.selecionar_nivel_acesso import selecionar_nivel_acesso
+from sei_automacao.utils.acesso import selecionar_nivel_acesso
 
 
 def clicar_incluir_doc(driver: webdriver.Remote) -> None:
@@ -78,7 +78,6 @@ def preencher_metadados_doc_externo(
     else:
         raise Exception("Não foi possível preencher a data do documento após várias tentativas (stale repetido).")
 
-    # Seleciona tipo de documento
     for _ in range(5):
         try:
             select_tipo_doc: Select = Select(driver.find_element(By.ID, 'selSerie'))
@@ -89,7 +88,6 @@ def preencher_metadados_doc_externo(
     else:
         raise Exception("Não foi possível selecionar o tipo de documento após várias tentativas (stale repetido).")
 
-    # Preenche número
     for _ in range(5):
         try:
             time.sleep(2)
@@ -102,7 +100,6 @@ def preencher_metadados_doc_externo(
     else:
         raise Exception("Não foi possível preencher o numero do documento após várias tentativas (stale repetido).")
 
-    # Seleciona formato
     formato_XPATH: str = ''
     if formato == 'Nato-digital':
         formato_XPATH = '//*[@id="divOptNato"]/div/label'
@@ -119,10 +116,8 @@ def preencher_metadados_doc_externo(
     else:
         raise Exception("Não foi possível selecionar o formato do documento após várias tentativas (stale repetido).")
 
-    # Seleciona nivel de acesso
     selecionar_nivel_acesso(driver, nivel_acesso, hipotese_legal)
 
-    # Anexa arquivo
     for _ in range(5):
         try:
             input_arq: WebElement = driver.find_element(By.ID, 'filArquivo')
@@ -133,7 +128,6 @@ def preencher_metadados_doc_externo(
     else:
         raise Exception("Não foi possível anexar o arquivo após várias tentativas (stale repetido).")
 
-    # Espera o arquivo anexo carregar
     nome_arq: str = path_anexo.name
 
     WebDriverWait(driver, 30).until(
@@ -154,7 +148,6 @@ def preencher_metadados_doc_sei(driver: webdriver.Remote, nivel_acesso: str, hip
 def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> None:
     janela_principal: str = driver.current_window_handle
 
-    # Espera abrir a janela do editor e muda para ela
     WebDriverWait(driver, 20).until(lambda d: len(d.window_handles) == 2)
     for handle in driver.window_handles:
         if handle != janela_principal:
@@ -163,13 +156,11 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
 
     driver.switch_to.default_content()
 
-    # Seleciona o iframe CORRETO pelo aria-describedby
     iframe_corpo: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//iframe[@aria-describedby='cke_250']"))
     )
     driver.switch_to.frame(iframe_corpo)
 
-    # Tenta localizar o primeiro parágrafo válido
     seletores: list[str] = [
         "p.Texto_Justificado_Recuo_Primeira_Linha",
         "p.Corpo_do_Texto",
@@ -186,7 +177,6 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
         except:
             continue
 
-    # Se não achou nenhum <p>, cria um
     if not paragrafo:
         driver.execute_script("""
             let p = document.createElement('p');
@@ -194,22 +184,18 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
         """)
         paragrafo = driver.find_element(By.CSS_SELECTOR, "body p:last-of-type")
 
-    # Ativa o cursor
     paragrafo.click()
 
-    # Substitui apenas o conteúdo do parágrafo
     driver.execute_script(
         "arguments[0].innerHTML = arguments[1];",
         paragrafo,
         texto
     )
 
-    # volta ao documento externo
     driver.switch_to.default_content()
     driver.find_element(By.TAG_NAME, "body").click()
     time.sleep(5)
 
-    # Salvar documento
     button_salvar_doc: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.ID, "cke_207"))
     )
@@ -229,7 +215,6 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
             driver.switch_to.window(handle)
             break
 
-    # Altera a barra de nome e cargo do destinatário
     iframe_enderecamento: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//iframe[@title='Endereçamento']"))
     )
@@ -249,7 +234,6 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
 
     driver.switch_to.default_content()
 
-    # Altera assunto
     iframe_assunto: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//iframe[@title='Assunto']"))
     )
@@ -262,7 +246,6 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
 
     driver.switch_to.default_content()
 
-    # Altera o texto do corpo do memorando
     iframe_corpo: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//iframe[@title='Corpo do Texto']"))
     )
@@ -284,23 +267,19 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
         texto_principal
     )
 
-    # Clica e ativa a barra de ferramentas do editor
     driver.switch_to.default_content()
     body: WebElement = driver.find_element(By.TAG_NAME, "body")
     body.click()
     time.sleep(5)
 
-    # Espera o botão salvar aparecer
     button_salvar_doc: WebElement = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located(
             (By.XPATH, "//a[@id='cke_331' and @title='Salvar (Ctrl+Alt+S)']")
         )
     )
 
-    # Clica usando JavaScript para evitar ElementNotInteractable
     driver.execute_script("arguments[0].click();", button_salvar_doc)
 
-    # Espera salvar o documento
     WebDriverWait(driver, 30).until(
         lambda d: "cke_button_off" in d.find_element(By.ID, "cke_331").get_attribute("class")
     )
@@ -311,12 +290,12 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
 
 def espera_documento_aparecer_arvore(driver: webdriver.Remote, tipo_doc: str, num: str = None) -> None:
     nome_arvore: str = None
-    
-    if num:        
+
+    if num:
         nome_arvore = f'{tipo_doc} {num}'
     else:
         nome_arvore = tipo_doc
-    
+
     WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{nome_arvore}')]"))
     )
