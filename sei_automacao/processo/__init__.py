@@ -161,8 +161,9 @@ def encaminhar_processo(
     manter_aberto: bool = True
 ) -> None:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrVisualizacao')
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_enviar_processo(driver)
+    trocar_iframe(driver, 'ifrVisualizacao')
     preencher_unidade(driver, unidade, desce_lista)
 
     if manter_aberto:
@@ -183,7 +184,6 @@ def enviar_email(
     fecha_alerta_doc_ja_existe: bool = False
 ) -> None:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrVisualizacao')
     trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_img_enviar_email(driver)
     preenche_dados_email_envia(

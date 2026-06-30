@@ -65,6 +65,8 @@ def preenche_dados_email_envia(
     input_para: WebElement = driver.find_element(By.ID, "s2id_autogen1")
 
     for email in emails_para:
+        email = email.strip()
+        
         input_para.send_keys(email)
         time.sleep(1)
 

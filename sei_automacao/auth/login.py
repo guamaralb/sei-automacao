@@ -4,7 +4,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
+import time
 
 def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str) -> None:
     input_usuario: WebElement = WebDriverWait(driver, 20).until(
@@ -22,7 +22,7 @@ def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str
 
     botao_acessar: WebElement = driver.find_element(By.ID, 'sbmAcessar')
     botao_acessar.click()
-
+    time.sleep(2)
 
 def fechar_popup_novidades(driver: webdriver.Remote) -> None:
     try:
