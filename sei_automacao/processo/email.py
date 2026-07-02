@@ -70,9 +70,16 @@ def preenche_dados_email_envia(
         input_para.send_keys(email)
         time.sleep(1)
 
-        span_para: WebElement = WebDriverWait(driver, 20).until(
-            EC.visibility_of_element_located((By.XPATH, f"//span[@class='select2-match' and text()='{email}']"))
+    span_para: WebElement = WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located(
+            (
+                By.XPATH,
+                f"//span[@class='select2-match' and normalize-space(text())='{email}']"
+            )
         )
+    )
+
+    if span_para.text.strip() == email:
         span_para.click()
 
     input_assunto: WebElement = driver.find_element(By.ID, "txtAssunto")
