@@ -8,7 +8,7 @@ import time
 
 def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str) -> None:
     input_usuario: WebElement = WebDriverWait(driver, 20).until(
-        EC.element_to_be_clickable(driver.find_element(By.ID, 'txtUsuario'))
+        EC.element_to_be_clickable((By.ID, 'txtUsuario'))
     )
     input_usuario.clear()
     input_usuario.send_keys(usuario)
@@ -22,7 +22,11 @@ def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str
 
     botao_acessar: WebElement = driver.find_element(By.ID, 'sbmAcessar')
     botao_acessar.click()
-    time.sleep(2)
+    
+    tab_recebidos: WebElement = WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.ID, 'tblProcessosRecebidos'))
+    )
+    tab_recebidos.is_displayed()   
 
 def fechar_popup_novidades(driver: webdriver.Remote) -> None:
     try:

@@ -16,3 +16,8 @@ def acessar_processo(driver: webdriver.Remote, num_processo: str) -> None:
         num_processo
     )
     input_pesquisa.submit()
+    
+    iframe_opcoes_processo = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.ID, 'ifrConteudoVisualizacao'))
+    )
+    iframe_opcoes_processo.is_displayed()
