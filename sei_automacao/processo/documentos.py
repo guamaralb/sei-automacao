@@ -15,7 +15,7 @@ from sei_automacao.core.iframes import trocar_iframe
 
 
 def clicar_incluir_doc(driver: webdriver.Remote) -> None:
-    img_incluir_doc: WebElement = WebDriverWait(driver, 20).until(
+    img_incluir_doc: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//img[@alt='Incluir Documento']"))
     )
     img_incluir_doc.click()
@@ -28,7 +28,7 @@ def selecionar_tipo_doc(driver: webdriver.Remote, tipo: str) -> None:
         )
 
     except:
-        a_exibir_todos_tipos_doc: WebElement = WebDriverWait(driver, 5).until(
+        a_exibir_todos_tipos_doc: WebElement = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//img[@alt='Exibir todos os tipos']"))
         )
         a_exibir_todos_tipos_doc.click()
@@ -46,7 +46,7 @@ def selecionar_tipo_doc(driver: webdriver.Remote, tipo: str) -> None:
 
     for _ in range(5):
         try:
-            elemento: WebElement = WebDriverWait(driver, 20).until(
+            elemento: WebElement = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, xpath_tipo_doc))
             )
             elemento.click()
@@ -69,7 +69,7 @@ def preencher_metadados_doc_externo(
 ) -> None:
     for _ in range(5):
         try:
-            input_data: WebElement = WebDriverWait(driver, 20).until(
+            input_data: WebElement = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.ID, 'txtDataElaboracao'))
             )
             input_data.send_keys(data)
@@ -138,7 +138,7 @@ def preencher_metadados_doc_externo(
 
 def preencher_metadados_doc_sei(driver: webdriver.Remote, nivel_acesso: str, hipotese_legal: str, nome: str = "") -> None:
     if not nome == "":
-        input_nome: WebElement = WebDriverWait(driver, 20).until(
+        input_nome: WebElement = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "txtNomeArvore"))
         )
         input_nome.send_keys(nome)
@@ -149,7 +149,7 @@ def preencher_metadados_doc_sei(driver: webdriver.Remote, nivel_acesso: str, hip
 def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> None:
     janela_principal: str = driver.current_window_handle
 
-    WebDriverWait(driver, 20).until(lambda d: len(d.window_handles) == 2)
+    WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) == 2)
     for handle in driver.window_handles:
         if handle != janela_principal:
             driver.switch_to.window(handle)
@@ -157,7 +157,7 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
 
     driver.switch_to.default_content()
 
-    iframe_corpo: WebElement = WebDriverWait(driver, 20).until(
+    iframe_corpo: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//iframe[@aria-describedby='cke_250']"))
     )
     driver.switch_to.frame(iframe_corpo)
@@ -197,7 +197,7 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
     driver.find_element(By.TAG_NAME, "body").click()
     time.sleep(5)
 
-    button_salvar_doc: WebElement = WebDriverWait(driver, 20).until(
+    button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "cke_207"))
     )
     driver.execute_script("arguments[0].click();", button_salvar_doc)
@@ -210,7 +210,7 @@ def inserir_conteudo_doc_sei_simples(driver: webdriver.Remote, texto: str) -> No
 
 def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, destinatario_nome: str, assunto: str, texto_principal: str) -> None:
     janela_principal: str = driver.current_window_handle
-    WebDriverWait(driver, 20).until(lambda d: len(d.window_handles) == 2)
+    WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) == 2)
     for handle in driver.window_handles:
         if handle != janela_principal:
             driver.switch_to.window(handle)
@@ -218,19 +218,19 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
 
     trocar_iframe(driver, "Corpo do Texto")
 
-    p_cargo: WebElement = WebDriverWait(driver, 20).until(
+    p_cargo: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//p[contains(text(), '@cargo_destinatario@')]"))
     )
     p_cargo.clear()
 
-    p_nome: WebElement = WebDriverWait(driver, 20).until(
+    p_nome: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//p[contains(text(), '@nome_destinatario@')]"))
     )
     driver.execute_script(
         f"arguments[0].innerHTML = arguments[0].innerHTML.replace('@nome_destinatario@', '{destinatario_nome}');", p_nome
     )
 
-    strong_assunto: WebElement = WebDriverWait(driver, 20).until(
+    strong_assunto: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//p[strong[contains(text(), 'Assunto:')]]"))
     )
     driver.execute_script(
@@ -258,7 +258,7 @@ def inserir_conteudo_doc_sei_memo(driver: webdriver.Remote, vocativo: str, desti
     body.click()
     time.sleep(5)
 
-    button_salvar_doc: WebElement = WebDriverWait(driver, 20).until(
+    button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located(
             (By.XPATH, "//a[contains(@class, 'cke_button__save')]")
         )
@@ -284,6 +284,6 @@ def espera_documento_aparecer_arvore(driver: webdriver.Remote, tipo_doc: str, nu
     else:
         nome_arvore = tipo_doc
 
-    WebDriverWait(driver, 20).until(
+    WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{nome_arvore}')]"))
     )

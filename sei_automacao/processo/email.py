@@ -16,7 +16,7 @@ from sei_automacao.utils.acesso import selecionar_nivel_acesso
 def clicar_img_enviar_email(driver: webdriver.Remote) -> None:
     for i in range(3):
         try:
-            img_enviar_email: WebElement = WebDriverWait(driver, 20).until(
+            img_enviar_email: WebElement = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
                      "//img[@alt='Enviar Correspondência Eletrônica' or @alt='Enviar Documento por Correio Eletrônico']"))
@@ -50,13 +50,13 @@ def preenche_dados_email_envia(
 
     driver.switch_to.default_content()
 
-    WebDriverWait(driver, 20).until(
+    WebDriverWait(driver, 10).until(
         lambda d: d.current_url != "about:blank"
     )
     time.sleep(1)
 
     select_de: Select = Select(
-        WebDriverWait(driver, 20).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "selDe"))
         )
     )
@@ -66,11 +66,11 @@ def preenche_dados_email_envia(
 
     for email in emails_para:
         email = email.strip()
-        
+
         input_para.send_keys(email)
         time.sleep(1)
 
-    span_para: WebElement = WebDriverWait(driver, 20).until(
+    span_para: WebElement = WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located(
             (
                 By.XPATH,

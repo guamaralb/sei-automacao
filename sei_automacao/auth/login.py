@@ -7,7 +7,7 @@ from selenium.common.exceptions import TimeoutException
 import time
 
 def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str) -> None:
-    input_usuario: WebElement = WebDriverWait(driver, 20).until(
+    input_usuario: WebElement = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, 'txtUsuario'))
     )
     input_usuario.clear()
@@ -22,15 +22,15 @@ def efetuar_login(driver: webdriver.Remote, usuario: str, senha: str, orgao: str
 
     botao_acessar: WebElement = driver.find_element(By.ID, 'sbmAcessar')
     botao_acessar.click()
-    
-    tab_recebidos: WebElement = WebDriverWait(driver, 20).until(
+
+    tab_recebidos: WebElement = WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located((By.ID, 'tblProcessosRecebidos'))
     )
-    tab_recebidos.is_displayed()   
+    tab_recebidos.is_displayed()
 
 def fechar_popup_novidades(driver: webdriver.Remote) -> None:
     try:
-        botao_fechar: WebElement = WebDriverWait(driver, 5).until(
+        botao_fechar: WebElement = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='Fechar' and contains(@href, 'infraModalFechar')]"))
         )
         botao_fechar.click()

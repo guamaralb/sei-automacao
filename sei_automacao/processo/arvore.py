@@ -1,6 +1,6 @@
 import time
 import os
-
+import re
 from pathlib import Path
 
 from selenium.webdriver.support import expected_conditions as EC
@@ -43,7 +43,7 @@ def listar_documentos_arvore(driver: webdriver.Remote) -> list[dict]:
 
         item = {
             'numero_sei': item_num,
-            'text': item_text,
+            'nome_arvore': item_text,
             'unidade': item_unidade
         }
 
@@ -91,3 +91,33 @@ def selecionar_doc_arvore(
     driver.switch_to.default_content()
 
 
+def clicar_num_processo(driver: webdriver.Remote) -> None:
+    driver.switch_to.default_content()
+
+    trocar_iframe(driver=driver, iframe='ifrArvore')
+
+    padrao_processo = r"\d{4}\.\d{2}\.\d{7}/\d{4}-\d{2}"
+
+    spans: list[WebElement] = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located(
+            (By.XPATH, '//div[@class="infraArvore"]/a/span')
+        )
+    )
+
+    span_num_processo = next(
+        (
+            span
+            for span in spans
+            if re.search(padrao_processo, span.text)
+        ),
+        None
+    )
+
+    if span_num_processo is None:
+        raise ValueError(
+            "Nenhum número de processo encontrado no padrão informado."
+        )
+
+    span_num_processo.click()
+
+    driver.switch_to.default_content()

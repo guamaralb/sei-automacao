@@ -20,7 +20,7 @@ def selecionar_nivel_acesso(driver: webdriver.Remote, nivel_acesso: str, hipotes
 
     for _ in range(5):
         try:
-            input_nivel_acesso: WebElement = WebDriverWait(driver, 20).until(
+            input_nivel_acesso: WebElement = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, f"//*[@id='{id_nivel_acesso}']/div/label"))
             )
             input_nivel_acesso.click()

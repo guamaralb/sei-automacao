@@ -9,7 +9,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 def clicar_img_concluir_processo(driver: webdriver.Remote) -> None:
     for i in range(3):
         try:
-            img_concluir_processo: WebElement = WebDriverWait(driver, 20).until(
+            img_concluir_processo: WebElement = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//img[@alt='Concluir Processo']"))
             )
             img_concluir_processo.click()

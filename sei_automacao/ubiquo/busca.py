@@ -7,7 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement
 
 def acessar_processo(driver: webdriver.Remote, num_processo: str) -> None:
     driver.switch_to.default_content()
-    input_pesquisa: WebElement = WebDriverWait(driver, 20).until(
+    input_pesquisa: WebElement = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, 'txtPesquisaRapida'))
     )
     driver.execute_script(
@@ -16,8 +16,8 @@ def acessar_processo(driver: webdriver.Remote, num_processo: str) -> None:
         num_processo
     )
     input_pesquisa.submit()
-    
-    iframe_opcoes_processo = WebDriverWait(driver, 20).until(
+
+    iframe_opcoes_processo = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, 'ifrConteudoVisualizacao'))
     )
     iframe_opcoes_processo.is_displayed()

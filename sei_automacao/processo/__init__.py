@@ -23,6 +23,7 @@ from sei_automacao.processo.marcadores import (
     clicar_img_gerenciar_marcadores,
     selecionar_marcador,
     procurar_sbmSalvar,
+    esperar_marcador_aparecer_apos_salvar
 )
 from sei_automacao.processo.encaminhamento import (
     clicar_enviar_processo,
@@ -36,7 +37,7 @@ from sei_automacao.processo.email import (
 from sei_automacao.processo.ciclo_de_vida import clicar_img_concluir_processo
 from sei_automacao.core.iframes import trocar_iframe
 from sei_automacao.core.popups import fechar_popup_basico
-
+from sei_automacao.processo.arvore import clicar_num_processo
 
 def incluir_doc_externo(
     driver: webdriver.Remote,
@@ -139,18 +140,19 @@ def adicionar_marcador(
     driver: webdriver.Remote,
     marcador: str
 ) -> None:
+    clicar_num_processo(driver)
     driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_img_gerenciar_marcadores(driver)
-    
+
     trocar_iframe(driver, 'ifrVisualizacao')
 
     if not procurar_sbmSalvar(driver):
         clicar_adicionar_btnAdicionar(driver)
 
     selecionar_marcador(driver, marcador)
-    time.sleep(1)
     clicar_salvar_sbmSalvar(driver)
+    esperar_marcador_aparecer_apos_salvar(driver, marcador)
     driver.switch_to.default_content()
 
 

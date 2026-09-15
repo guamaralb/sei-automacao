@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 def abrir_menu(driver: webdriver.Remote) -> None:
-    menu_lateral: WebElement = WebDriverWait(driver, 20).until(
+    menu_lateral: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "divInfraAreaTelaE"))
     )
     classes: str = menu_lateral.get_attribute("class")
@@ -30,12 +30,12 @@ def abrir_menu(driver: webdriver.Remote) -> None:
 def clicar_iniciar_processo(driver: webdriver.Remote) -> None:
     for index in range(3):
         try:
-            span_iniciar_processo: WebElement = WebDriverWait(driver, 20).until(
+            span_iniciar_processo: WebElement = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Iniciar Processo')]"))
             )
             span_iniciar_processo.click()
 
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Escolha o Tipo do Processo:')]"))
             )
             return
@@ -48,14 +48,14 @@ def clicar_iniciar_processo(driver: webdriver.Remote) -> None:
 
 
 def selecionar_tipo_processo(driver: webdriver.Remote, tipo_processo: str) -> None:
-    a_exibir_todos_tipos_processo: WebElement = WebDriverWait(driver, 20).until(
+    a_exibir_todos_tipos_processo: WebElement = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "ancExibirTiposProcedimento"))
     )
     a_exibir_todos_tipos_processo.click()
 
     for _ in range(3):
         try:
-            a_tipo_processo: WebElement = WebDriverWait(driver, 20).until(
+            a_tipo_processo: WebElement = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, f"//a[normalize-space(text())='{tipo_processo}']"))
             )
             a_tipo_processo.click()
@@ -66,7 +66,7 @@ def selecionar_tipo_processo(driver: webdriver.Remote, tipo_processo: str) -> No
 
 
 def preencher_especificacao_processo(driver: webdriver.Remote, especificacao: str) -> None:
-    input_espec: WebElement = WebDriverWait(driver, 20).until(
+    input_espec: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, 'txtDescricao'))
     )
     input_espec.send_keys(especificacao)

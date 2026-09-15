@@ -76,7 +76,7 @@ def obter_conteudo_doc(driver: webdriver.Remote, formato: Literal['web_element',
 
     texto = body.text
 
-    if formato == 'html':
+    if formato == 'web_element':
         return body
     elif formato == 'texto':
         return texto
