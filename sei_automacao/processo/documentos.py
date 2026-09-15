@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Literal
 
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -84,7 +85,9 @@ def preencher_metadados_doc_externo(  # noqa: PLR0913, PLR0917, PLR0912
     data: str,
     path_anexo: Path,
     nivel_acesso: str,
-    hipotese_legal: str = '',
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ] = '',
 ) -> None:
     for _ in range(5):
         try:
@@ -194,8 +197,10 @@ def preencher_metadados_doc_externo(  # noqa: PLR0913, PLR0917, PLR0912
 
 def preencher_metadados_doc_sei(
     driver: webdriver.Remote,
-    nivel_acesso: str,
-    hipotese_legal: str,
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ],
     nome: str = '',
 ) -> None:
     if nome:
@@ -285,15 +290,17 @@ def inserir_conteudo_doc_sei_memo(
     texto_principal: str,
 ) -> None:
     janela_principal: str = driver.current_window_handle
+
     WebDriverWait(driver, 10).until(
         lambda d: len(d.window_handles) == NUM_JANELAS_COM_POPUP
     )
+
     for handle in driver.window_handles:
         if handle != janela_principal:
             driver.switch_to.window(handle)
             break
 
-    trocar_iframe(driver, 'Corpo do Texto')
+    trocar_iframe(driver, 'Endereçamento')
 
     p_cargo: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
@@ -315,6 +322,9 @@ def inserir_conteudo_doc_sei_memo(
         p_nome,
     )
 
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'Assunto')
+
     strong_assunto: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
             By.XPATH,
@@ -326,6 +336,9 @@ def inserir_conteudo_doc_sei_memo(
         f"'Assunto:', 'Assunto: {assunto}');",
         strong_assunto,
     )
+
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'Corpo do Texto')
 
     p_vocativo: WebElement = driver.find_element(
         By.XPATH, "//p[contains(text(), '@vocativo_destinatario@')]"

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
@@ -7,7 +9,11 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 
 
 def selecionar_nivel_acesso(
-    driver: webdriver.Remote, nivel_acesso: str, hipotese_legal: str = ''
+    driver: webdriver.Remote,
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ],
 ) -> None:
     id_nivel_acesso: str = ''
 

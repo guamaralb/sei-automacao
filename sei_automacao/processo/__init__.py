@@ -1,10 +1,8 @@
 import time
 from pathlib import Path
+from typing import Literal
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
 from sei_automacao.core.buttons import (
     clicar_adicionar_btnAdicionar,
@@ -14,7 +12,9 @@ from sei_automacao.core.buttons import (
 )
 from sei_automacao.core.iframes import trocar_iframe
 from sei_automacao.core.popups import fechar_popup_basico
-from sei_automacao.processo.arvore import clicar_num_processo
+from sei_automacao.processo.arvore import (
+    clicar_num_processo as clicar_num_processo,
+)
 from sei_automacao.processo.ciclo_de_vida import clicar_img_concluir_processo
 from sei_automacao.processo.documentos import (
     clicar_incluir_doc,
@@ -49,8 +49,10 @@ def incluir_doc_externo(  # noqa: PLR0913, PLR0917
     formato: str,
     data: str,
     path_anexo: Path,
-    nivel_acesso: str,
-    hipotese_legal: str = '',
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ] = '',
     fecha_alerta_doc_ja_existe: bool = False,
 ) -> None:
     driver.switch_to.default_content()
@@ -86,8 +88,10 @@ def incluir_doc_sei_simples(  # noqa: PLR0913, PLR0917
     driver: webdriver.Remote,
     tipo_doc: str,
     texto: str,
-    nivel_acesso: str,
-    hipotese_legal: str = '',
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ] = '',
     nome: str = '',
     fecha_alerta_doc_ja_existe: bool = False,
 ) -> None:
@@ -115,8 +119,10 @@ def incluir_doc_sei_memo(  # noqa: PLR0913, PLR0917
     destinatario_nome: str,
     assunto: str,
     texto_principal: str,
-    nivel_acesso: str,
-    hipotese_legal: str = '',
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ] = '',
     nome: str = '',
     fecha_alerta_doc_ja_existe: bool = False,
 ) -> None:
@@ -140,19 +146,15 @@ def incluir_doc_sei_memo(  # noqa: PLR0913, PLR0917
 
 
 def adicionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
-    clicar_num_processo(driver)
+    # Garante que a página retorna no menu do processo
+    driver.refresh()
+
     driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrConteudoVisualizacao')
+
     clicar_gerenciar_marcadores(driver)
 
     trocar_iframe(driver, 'ifrVisualizacao')
-
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((
-            By.XPATH,
-            "//h1[contains(normalize-space(), 'Adicionar Marcador')]",
-        ))
-    )
 
     if not procurar_sbmSalvar(driver):
         clicar_adicionar_btnAdicionar(driver)
@@ -160,6 +162,7 @@ def adicionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
     selecionar_marcador(driver, marcador)
     clicar_salvar_sbmSalvar(driver)
     esperar_marcador_aparecer_apos_salvar(driver, marcador)
+
     driver.switch_to.default_content()
 
 
@@ -188,8 +191,10 @@ def enviar_email(  # noqa: PLR0913, PLR0917
     emails_para: list[str],
     assunto: str,
     corpo_email: str,
-    nivel_acesso: str,
-    hipotese_legal: str = '',
+    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
+    hipotese_legal: Literal[
+        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
+    ] = '',
     fecha_alerta_doc_ja_existe: bool = False,
 ) -> None:
     driver.switch_to.default_content()
