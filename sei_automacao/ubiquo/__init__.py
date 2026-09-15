@@ -1,9 +1,17 @@
 from selenium import webdriver
 
-from sei_automacao.navigation.menu import abrir_menu, clicar_iniciar_processo, selecionar_tipo_processo, preencher_especificacao_processo
-from sei_automacao.utils.acesso import selecionar_nivel_acesso
 from sei_automacao.core.buttons import clicar_salvar_btnSalvar
-from sei_automacao.ubiquo.unidade import acessar_pagina_trocar_unidade, selecionar_unidade
+from sei_automacao.navigation.menu import (
+    abrir_menu,
+    clicar_iniciar_processo,
+    preencher_especificacao_processo,
+    selecionar_tipo_processo,
+)
+from sei_automacao.ubiquo.unidade import (
+    acessar_pagina_trocar_unidade,
+    selecionar_unidade,
+)
+from sei_automacao.utils.acesso import selecionar_nivel_acesso
 
 
 def iniciar_processo(
@@ -11,7 +19,7 @@ def iniciar_processo(
     tipo_processo: str,
     especificacao: str,
     nivel_acesso: str,
-    hipotese_legal: str = ""
+    hipotese_legal: str = '',
 ) -> None:
     driver.switch_to.default_content()
     abrir_menu(driver)
@@ -22,10 +30,7 @@ def iniciar_processo(
     clicar_salvar_btnSalvar(driver)
 
 
-def trocar_unidade(
-    driver: webdriver.Remote,
-    unidade: str
-) -> None:
+def trocar_unidade(driver: webdriver.Remote, unidade: str) -> None:
     driver.switch_to.default_content()
     acessar_pagina_trocar_unidade(driver)
     selecionar_unidade(driver, unidade)

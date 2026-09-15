@@ -1,13 +1,16 @@
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 
 def selecionar_inserir_bloco_ass(driver: webdriver.Remote) -> None:
     img_bloco_ass: WebElement = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//img[@alt='Incluir em Bloco de Assinatura']"))
+        EC.element_to_be_clickable((
+            By.XPATH,
+            "//img[@alt='Incluir em Bloco de Assinatura']",
+        ))
     )
     img_bloco_ass.click()
 

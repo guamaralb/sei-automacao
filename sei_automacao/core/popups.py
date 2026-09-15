@@ -6,9 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 def fechar_popup_basico(driver, msg_contains: str) -> None:
     try:
-        alert: Alert = WebDriverWait(driver, 10).until(
-            EC.alert_is_present()
-        )
+        alert: Alert = WebDriverWait(driver, 10).until(EC.alert_is_present())
 
         if msg_contains in alert.text:
             alert.accept()
