@@ -301,7 +301,6 @@ def inserir_conteudo_doc_sei_memo(
             break
     trocar_iframe(driver, 'Endereçamento', 'xpath')
 
-    print(1)
     p_cargo: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
             By.XPATH,
@@ -310,7 +309,6 @@ def inserir_conteudo_doc_sei_memo(
     )
     p_cargo.clear()
 
-    print(2)
     p_nome: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
             By.XPATH,
@@ -322,7 +320,6 @@ def inserir_conteudo_doc_sei_memo(
         f"'@nome_destinatario@', '{destinatario_nome}');",
         p_nome,
     )
-    print(3)
 
     driver.switch_to.default_content()
     trocar_iframe(driver, 'Assunto', 'xpath')

@@ -121,9 +121,8 @@ def incluir_doc_sei_memo(  # noqa: PLR0913, PLR0917
     assunto: str,
     texto_principal: str,
     nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
-    hipotese_legal: Literal[
-        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
-    ] = '',
+    hipotese_legal: None
+    | Literal['Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'] = None,
     nome: str = '',
     fecha_alerta_doc_ja_existe: bool = False,
 ) -> None:
