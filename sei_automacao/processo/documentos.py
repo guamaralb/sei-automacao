@@ -299,9 +299,9 @@ def inserir_conteudo_doc_sei_memo(
         if handle != janela_principal:
             driver.switch_to.window(handle)
             break
+    trocar_iframe(driver, 'Endereçamento', 'xpath')
 
-    trocar_iframe(driver, 'Endereçamento')
-
+    print(1)
     p_cargo: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
             By.XPATH,
@@ -310,6 +310,7 @@ def inserir_conteudo_doc_sei_memo(
     )
     p_cargo.clear()
 
+    print(2)
     p_nome: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
             By.XPATH,
@@ -321,9 +322,10 @@ def inserir_conteudo_doc_sei_memo(
         f"'@nome_destinatario@', '{destinatario_nome}');",
         p_nome,
     )
+    print(3)
 
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'Assunto')
+    trocar_iframe(driver, 'Assunto', 'xpath')
 
     strong_assunto: WebElement = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((
@@ -338,7 +340,7 @@ def inserir_conteudo_doc_sei_memo(
     )
 
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'Corpo do Texto')
+    trocar_iframe(driver, 'Corpo do Texto', 'xpath')
 
     p_vocativo: WebElement = driver.find_element(
         By.XPATH, "//p[contains(text(), '@vocativo_destinatario@')]"
@@ -363,6 +365,7 @@ def inserir_conteudo_doc_sei_memo(
     driver.switch_to.default_content()
     body: WebElement = driver.find_element(By.TAG_NAME, 'body')
     body.click()
+
     time.sleep(5)
 
     button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(

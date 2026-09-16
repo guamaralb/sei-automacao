@@ -15,6 +15,18 @@ def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
     a_gerenciar_marcadores.click()
 
 
+def checar_marcador_existe(driver: webdriver.Remote, marcador: str) -> bool:
+    imgs = driver.find_elements(
+        By.XPATH, '//a/img[contains(@title, "Marcador")]'
+    )
+    for img in imgs:
+        title = img.get_attribute('title') or ''
+        nome_marcador = title.split('\n', 1)[-1].strip()
+        if nome_marcador == marcador:
+            return True
+    return False
+
+
 def procurar_sbmSalvar(driver: webdriver.Remote) -> bool:
     button_smbSalvar: list[WebElement] = driver.find_elements(
         By.ID, 'sbmSalvar'

@@ -35,6 +35,7 @@ from sei_automacao.processo.encaminhamento import (
     selecionar_manter_aberto,
 )
 from sei_automacao.processo.marcadores import (
+    checar_marcador_existe,
     clicar_gerenciar_marcadores,
     esperar_marcador_aparecer_apos_salvar,
     procurar_sbmSalvar,
@@ -148,6 +149,12 @@ def incluir_doc_sei_memo(  # noqa: PLR0913, PLR0917
 def adicionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
     # Garante que a página retorna no menu do processo
     driver.refresh()
+
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrArvore')
+
+    if checar_marcador_existe(driver, marcador):
+        return
 
     driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrConteudoVisualizacao')
