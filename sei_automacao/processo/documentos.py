@@ -359,8 +359,19 @@ def inserir_conteudo_doc_sei_memo(
         texto_principal,
     )
 
+    p_att: WebElement = driver.find_element(
+        By.XPATH, "//p[contains(text(), 'Atenciosamente,')]"
+    )
+    driver.execute_script(
+        """
+        arguments[0].innerHTML = arguments[1];
+        """,
+        p_att,
+        '',
+    )
+
     # Espera a atualização
-    time.sleep(2)
+    time.sleep(3)
 
     driver.switch_to.default_content()
     body: WebElement = driver.find_element(By.TAG_NAME, 'body')
