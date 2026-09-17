@@ -149,13 +149,10 @@ def adicionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
     # Garante que a página retorna no menu do processo
     driver.refresh()
 
-    driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrArvore')
-
+    # A função checar_marcador_existe muda o iframe e retorna para default
     if checar_marcador_existe(driver, marcador):
         return
 
-    driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrConteudoVisualizacao')
 
     clicar_gerenciar_marcadores(driver)

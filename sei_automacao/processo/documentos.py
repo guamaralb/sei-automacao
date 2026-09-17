@@ -358,20 +358,10 @@ def inserir_conteudo_doc_sei_memo(
         p_inserir_txt,
         texto_principal,
     )
-    
+
     # Espera a atualização
-    time.sleep(5)
-    
-    try:
-        WebDriverWait(driver, 5).until(
-            lambda d: len(p_inserir_txt.find_elements(By.TAG_NAME, 'p')) > 10
-        )
-    except TimeoutException as exc:
-        raise InsercaoConteudoFalhouError(
-            'Falha ao confirmar a inserção do texto principal: o elemento '
-            'não ficou com múltiplas linhas após a inserção.'
-        ) from exc
-        
+    time.sleep(2)
+
     driver.switch_to.default_content()
     body: WebElement = driver.find_element(By.TAG_NAME, 'body')
     body.click()

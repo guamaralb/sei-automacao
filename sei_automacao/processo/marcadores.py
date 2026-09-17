@@ -4,6 +4,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from sei_automacao.core.iframes import trocar_iframe
+
 
 def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
     a_gerenciar_marcadores: WebElement = WebDriverWait(driver, 10).until(
@@ -15,16 +17,33 @@ def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
     a_gerenciar_marcadores.click()
 
 
-def checar_marcador_existe(driver: webdriver.Remote, marcador: str) -> bool:
+def listar_marcadores(driver: webdriver.Remote) -> list[str]:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrArvore')
+
+    lista_marcadores: list[str] = []
+
     imgs = driver.find_elements(
         By.XPATH, '//a/img[contains(@title, "Marcador")]'
     )
     for img in imgs:
         title = img.get_attribute('title') or ''
         nome_marcador = title.split('\n', 1)[-1].strip()
-        if nome_marcador == marcador:
-            return True
-    return False
+        lista_marcadores.append(nome_marcador)
+
+    driver.switch_to.default_content()
+
+    return lista_marcadores
+
+
+def checar_marcador_existe(
+    driver: webdriver.Remote, nome_marcador: str
+) -> bool:
+    lista_marcadores = listar_marcadores(driver)
+
+    marcador_existe: bool = nome_marcador in lista_marcadores
+
+    return marcador_existe
 
 
 def procurar_sbmSalvar(driver: webdriver.Remote) -> bool:
