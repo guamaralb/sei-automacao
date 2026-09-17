@@ -348,6 +348,17 @@ def inserir_conteudo_doc_sei_memo(
         p_vocativo,
     )
 
+    p_att: WebElement = driver.find_element(
+        By.XPATH, "//p[contains(text(), 'Atenciosamente,')]"
+    )
+    driver.execute_script(
+        """
+        arguments[0].innerHTML = arguments[1];
+        """,
+        p_att,
+        '',
+    )
+
     p_inserir_txt: WebElement = driver.find_element(
         By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]"
     )
@@ -359,8 +370,9 @@ def inserir_conteudo_doc_sei_memo(
         texto_principal,
     )
 
+
     # Espera a atualização
-    time.sleep(2)
+    time.sleep(3)
 
     driver.switch_to.default_content()
     body: WebElement = driver.find_element(By.TAG_NAME, 'body')
