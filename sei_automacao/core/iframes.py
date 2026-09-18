@@ -28,14 +28,12 @@ def localizar_xpath_elemento_com_fallback_iframe(
     encontrado (não retorna para o default_content automaticamente).
     """
     try:
-        print("VAMOS TROCAR O IFRAME")
         trocar_iframe(driver, nome_iframe, tipo_busca)
-        print("Conseguiu trocar o iframe, vamos procurar o elemento")
         return WebDriverWait(driver, timeout_nomeado).until(
             EC.presence_of_element_located((By.XPATH, xpath_elemento))
         )
     except (TimeoutException, NoSuchElementException):
-        print("Não conseguiu, tentando achar o elemento em todos os iframes")
+        print("Não conseguiu achar o ifram, tentando achar o elemento em todos os iframes")
         logging.warning(
             f"Iframe nomeado '{nome_iframe}' não encontrado ou elemento "
             f"ausente nele; buscando '{xpath_elemento}' em todos os "
