@@ -21,7 +21,7 @@ def acessar_processo(driver: webdriver.Remote, num_processo: str) -> None:
         logging.error(
             f'[{num_processo}] Janelas abertas: {driver.window_handles}'
         )
-        driver.save_screenshot(f'debug_{num_processo.replace("/", "_")}.png')
+        # driver.save_screenshot(f'debug_{num_processo.replace("/", "_")}.png')
         raise
 
     driver.execute_script(
