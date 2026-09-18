@@ -11,7 +11,6 @@ from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,9 +28,7 @@ def iniciar_driver(
             options.add_argument('--no-proxy-server')
 
             logger.info('Obtendo EdgeDriver...')
-            service = EdgeService(
-                EdgeChromiumDriverManager().install()
-            )
+            service = EdgeService(EdgeChromiumDriverManager().install())
 
             logger.info('Inicializando WebDriver do Edge...')
             driver = webdriver.Edge(
@@ -48,9 +45,7 @@ def iniciar_driver(
         options.add_argument('--no-proxy-server')
 
         logger.info('Obtendo ChromeDriver...')
-        service = ChromeService(
-            ChromeDriverManager().install()
-        )
+        service = ChromeService(ChromeDriverManager().install())
 
         logger.info('Inicializando WebDriver do Chrome...')
         driver = webdriver.Chrome(
