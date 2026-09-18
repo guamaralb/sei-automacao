@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from sei_automacao.core.iframes import (
-    localizar_elemento_com_fallback_iframe,
+    localizar_xpath_elemento_com_fallback_iframe,
 )
 from sei_automacao.utils.acesso import selecionar_nivel_acesso
 
@@ -303,7 +303,7 @@ def inserir_conteudo_doc_sei_memo(
                 driver.switch_to.window(handle)
                 break
 
-        p_cargo = localizar_elemento_com_fallback_iframe(
+        p_cargo = localizar_xpath_elemento_com_fallback_iframe(
             driver,
             'Endereçamento',
             "//p[contains(text(), '@cargo_destinatario@')]",
@@ -325,7 +325,7 @@ def inserir_conteudo_doc_sei_memo(
 
         driver.switch_to.default_content()
 
-        strong_assunto = localizar_elemento_com_fallback_iframe(
+        strong_assunto = localizar_xpath_elemento_com_fallback_iframe(
             driver, 'Assunto', "//p[strong[contains(text(), 'Assunto:')]]"
         )
         driver.execute_script(
@@ -336,7 +336,7 @@ def inserir_conteudo_doc_sei_memo(
 
         driver.switch_to.default_content()
 
-        p_vocativo = localizar_elemento_com_fallback_iframe(
+        p_vocativo = localizar_xpath_elemento_com_fallback_iframe(
             driver,
             'Corpo do Texto',
             "//p[contains(text(), '@vocativo_destinatario@')]",

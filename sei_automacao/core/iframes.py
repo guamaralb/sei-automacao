@@ -11,10 +11,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 TipoBusca = Literal['id', 'name', 'xpath']
 
 
-def localizar_elemento_com_fallback_iframe(
+def localizar_xpath_elemento_com_fallback_iframe(
     driver: webdriver.Remote,
     nome_iframe: str,
     xpath_elemento: str,
+    tipo_busca: TipoBusca | None = None,
     timeout_nomeado: int = 10,
     timeout_fallback: int = 3,
 ) -> WebElement:
@@ -27,11 +28,14 @@ def localizar_elemento_com_fallback_iframe(
     encontrado (não retorna para o default_content automaticamente).
     """
     try:
-        trocar_iframe(driver, nome_iframe, 'xpath')
+        print("VAMOS TROCAR O IFRAME")
+        trocar_iframe(driver, nome_iframe, tipo_busca)
+        print("Conseguiu trocar o iframe, vamos procurar o elemento")
         return WebDriverWait(driver, timeout_nomeado).until(
             EC.presence_of_element_located((By.XPATH, xpath_elemento))
         )
     except (TimeoutException, NoSuchElementException):
+        print("Não conseguiu, tentando achar o elemento em todos os iframes")
         logging.warning(
             f"Iframe nomeado '{nome_iframe}' não encontrado ou elemento "
             f"ausente nele; buscando '{xpath_elemento}' em todos os "
@@ -41,18 +45,26 @@ def localizar_elemento_com_fallback_iframe(
     driver.switch_to.default_content()
     iframes = driver.find_elements(By.TAG_NAME, 'iframe')
 
+    print('PROCURANDO:', xpath_elemento)
     for iframe in iframes:
         driver.switch_to.default_content()
         try:
             driver.switch_to.frame(iframe)
+            print(
+                'Alterado para iframe:',
+                iframe.get_attribute('name') or iframe.get_attribute('id'),
+            )
         except Exception:
             continue
 
         try:
-            return WebDriverWait(driver, timeout_fallback).until(
+            element = WebDriverWait(driver, timeout_fallback).until(
                 EC.presence_of_element_located((By.XPATH, xpath_elemento))
             )
+            print('ACHOU')
+            return element
         except TimeoutException:
+            print('NÃO ACHOU')
             continue
 
     driver.switch_to.default_content()
