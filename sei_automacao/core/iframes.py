@@ -1,12 +1,65 @@
+import logging
 from typing import Literal
 
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 TipoBusca = Literal['id', 'name', 'xpath']
+
+
+def localizar_elemento_com_fallback_iframe(
+    driver: webdriver.Remote,
+    nome_iframe: str,
+    xpath_elemento: str,
+    timeout_nomeado: int = 10,
+    timeout_fallback: int = 3,
+) -> WebElement:
+    """
+    Tenta localizar `xpath_elemento` dentro do iframe chamado `nome_iframe`.
+    Se o iframe nomeado não existir ou o elemento não aparecer nele,
+    varre todos os iframes da página procurando o elemento.
+
+    Ao final, o driver fica posicionado no iframe onde o elemento foi
+    encontrado (não retorna para o default_content automaticamente).
+    """
+    try:
+        trocar_iframe(driver, nome_iframe, 'xpath')
+        return WebDriverWait(driver, timeout_nomeado).until(
+            EC.presence_of_element_located((By.XPATH, xpath_elemento))
+        )
+    except (TimeoutException, NoSuchElementException):
+        logging.warning(
+            f"Iframe nomeado '{nome_iframe}' não encontrado ou elemento "
+            f"ausente nele; buscando '{xpath_elemento}' em todos os "
+            'iframes da página.'
+        )
+
+    driver.switch_to.default_content()
+    iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+
+    for iframe in iframes:
+        driver.switch_to.default_content()
+        try:
+            driver.switch_to.frame(iframe)
+        except Exception:
+            continue
+
+        try:
+            return WebDriverWait(driver, timeout_fallback).until(
+                EC.presence_of_element_located((By.XPATH, xpath_elemento))
+            )
+        except TimeoutException:
+            continue
+
+    driver.switch_to.default_content()
+    raise NoSuchElementException(
+        f"Elemento '{xpath_elemento}' não encontrado em nenhum iframe "
+        f"(nem no nomeado '{nome_iframe}', nem na busca em todos os iframes)."
+    )
 
 
 def trocar_iframe(

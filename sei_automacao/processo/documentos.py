@@ -12,7 +12,9 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from sei_automacao.core.iframes import trocar_iframe
+from sei_automacao.core.iframes import (
+    localizar_elemento_com_fallback_iframe,
+)
 from sei_automacao.utils.acesso import selecionar_nivel_acesso
 
 NUM_JANELAS_COM_POPUP = 2
@@ -291,112 +293,118 @@ def inserir_conteudo_doc_sei_memo(
 ) -> None:
     janela_principal: str = driver.current_window_handle
 
-    WebDriverWait(driver, 10).until(
-        lambda d: len(d.window_handles) == NUM_JANELAS_COM_POPUP
-    )
-
-    for handle in driver.window_handles:
-        if handle != janela_principal:
-            driver.switch_to.window(handle)
-            break
-    trocar_iframe(driver, 'Endereçamento', 'xpath')
-
-    p_cargo: WebElement = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((
-            By.XPATH,
-            "//p[contains(text(), '@cargo_destinatario@')]",
-        ))
-    )
-    p_cargo.clear()
-
-    p_nome: WebElement = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((
-            By.XPATH,
-            "//p[contains(text(), '@nome_destinatario@')]",
-        ))
-    )
-    driver.execute_script(
-        'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-        f"'@nome_destinatario@', '{destinatario_nome}');",
-        p_nome,
-    )
-
-    driver.switch_to.default_content()
-    trocar_iframe(driver, 'Assunto', 'xpath')
-
-    strong_assunto: WebElement = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((
-            By.XPATH,
-            "//p[strong[contains(text(), 'Assunto:')]]",
-        ))
-    )
-    driver.execute_script(
-        'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-        f"'Assunto:', 'Assunto: {assunto}');",
-        strong_assunto,
-    )
-
-    driver.switch_to.default_content()
-    trocar_iframe(driver, 'Corpo do Texto', 'xpath')
-
-    p_vocativo: WebElement = driver.find_element(
-        By.XPATH, "//p[contains(text(), '@vocativo_destinatario@')]"
-    )
-    driver.execute_script(
-        'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-        f"'@vocativo_destinatario@', '{vocativo}');",
-        p_vocativo,
-    )
-
-    p_att: WebElement = driver.find_element(
-        By.XPATH, "//p[contains(text(), 'Atenciosamente,')]"
-    )
-    driver.execute_script(
-        """
-        arguments[0].innerHTML = arguments[1];
-        """,
-        p_att,
-        '',
-    )
-
-    p_inserir_txt: WebElement = driver.find_element(
-        By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]"
-    )
-    driver.execute_script(
-        """
-        arguments[0].innerHTML = arguments[1];
-        """,
-        p_inserir_txt,
-        texto_principal,
-    )
-
-    # Espera a atualização
-    time.sleep(3)
-
-    driver.switch_to.default_content()
-    body: WebElement = driver.find_element(By.TAG_NAME, 'body')
-    body.click()
-
-    button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((
-            By.XPATH,
-            "//a[contains(@class, 'cke_button__save')]",
-        ))
-    )
-
-    driver.execute_script('arguments[0].click();', button_salvar_doc)
-
-    WebDriverWait(driver, 30).until(
-        lambda d: (
-            'cke_button_disabled'
-            in d.find_element(
-                By.CSS_SELECTOR, 'a.cke_button__save'
-            ).get_attribute('class')
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.window_handles) == NUM_JANELAS_COM_POPUP
         )
-    )
 
-    driver.close()
-    driver.switch_to.window(janela_principal)
+        for handle in driver.window_handles:
+            if handle != janela_principal:
+                driver.switch_to.window(handle)
+                break
+
+        p_cargo = localizar_elemento_com_fallback_iframe(
+            driver,
+            'Endereçamento',
+            "//p[contains(text(), '@cargo_destinatario@')]",
+        )
+        p_cargo.clear()
+
+        # Já estamos no iframe correto (nomeado ou achado por fallback)
+        p_nome: WebElement = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                "//p[contains(text(), '@nome_destinatario@')]",
+            ))
+        )
+        driver.execute_script(
+            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
+            f"'@nome_destinatario@', '{destinatario_nome}');",
+            p_nome,
+        )
+
+        driver.switch_to.default_content()
+
+        strong_assunto = localizar_elemento_com_fallback_iframe(
+            driver, 'Assunto', "//p[strong[contains(text(), 'Assunto:')]]"
+        )
+        driver.execute_script(
+            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
+            f"'Assunto:', 'Assunto: {assunto}');",
+            strong_assunto,
+        )
+
+        driver.switch_to.default_content()
+
+        p_vocativo = localizar_elemento_com_fallback_iframe(
+            driver,
+            'Corpo do Texto',
+            "//p[contains(text(), '@vocativo_destinatario@')]",
+        )
+        driver.execute_script(
+            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
+            f"'@vocativo_destinatario@', '{vocativo}');",
+            p_vocativo,
+        )
+
+        # Já estamos no iframe correto de "Corpo do Texto"
+        p_att: WebElement = driver.find_element(
+            By.XPATH, "//p[contains(text(), 'Atenciosamente,')]"
+        )
+        driver.execute_script(
+            """
+            arguments[0].innerHTML = arguments[1];
+            """,
+            p_att,
+            '',
+        )
+
+        p_inserir_txt: WebElement = driver.find_element(
+            By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]"
+        )
+        driver.execute_script(
+            """
+            arguments[0].innerHTML = arguments[1];
+            """,
+            p_inserir_txt,
+            texto_principal,
+        )
+
+        # Espera a atualização
+        time.sleep(3)
+
+        driver.switch_to.default_content()
+        body: WebElement = driver.find_element(By.TAG_NAME, 'body')
+        body.click()
+
+        button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                "//a[contains(@class, 'cke_button__save')]",
+            ))
+        )
+
+        driver.execute_script('arguments[0].click();', button_salvar_doc)
+
+        WebDriverWait(driver, 30).until(
+            lambda d: (
+                'cke_button_disabled'
+                in d.find_element(
+                    By.CSS_SELECTOR, 'a.cke_button__save'
+                ).get_attribute('class')
+            )
+        )
+
+        driver.close()
+        driver.switch_to.window(janela_principal)
+
+    except Exception:
+        for handle in driver.window_handles:
+            if handle != janela_principal:
+                driver.switch_to.window(handle)
+                driver.close()
+        driver.switch_to.window(janela_principal)
+        raise
 
 
 def espera_documento_aparecer_arvore(
