@@ -13,12 +13,25 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 logger = logging.getLogger(__name__)
 
+DOWNLOAD_DIR_PADRAO = os.path.join(os.path.expanduser('~'), 'Downloads', 'SEI')
+
 
 def iniciar_driver(
     driver_type: Literal['chrome', 'edge'] = 'chrome',
+    download_dir: str = DOWNLOAD_DIR_PADRAO,
 ) -> webdriver.Remote:
     os.environ['NO_PROXY'] = 'localhost,127.0.0.1'
     os.environ['no_proxy'] = 'localhost,127.0.0.1'
+
+    download_dir = os.path.abspath(download_dir)
+    os.makedirs(download_dir, exist_ok=True)
+
+    prefs = {
+        'download.default_directory': download_dir,
+        'download.prompt_for_download': False,
+        'download.directory_upgrade': True,
+        'safebrowsing.enabled': True,
+    }
 
     try:
         if driver_type == 'edge':
@@ -26,6 +39,7 @@ def iniciar_driver(
 
             options = EdgeOptions()
             options.add_argument('--no-proxy-server')
+            options.add_experimental_option('prefs', prefs)
 
             logger.info('Obtendo EdgeDriver...')
             service = EdgeService(EdgeChromiumDriverManager().install())
@@ -36,13 +50,22 @@ def iniciar_driver(
                 options=options,
             )
 
-            logger.info('Microsoft Edge iniciado com sucesso.')
+            driver.execute_cdp_cmd(
+                'Page.setDownloadBehavior',
+                {'behavior': 'allow', 'downloadPath': download_dir},
+            )
+
+            logger.info(
+                'Microsoft Edge iniciado com sucesso. Downloads em: %s',
+                download_dir,
+            )
             return driver
 
         logger.info('Iniciando Google Chrome...')
 
         options = ChromeOptions()
         options.add_argument('--no-proxy-server')
+        options.add_experimental_option('prefs', prefs)
 
         logger.info('Obtendo ChromeDriver...')
         service = ChromeService(ChromeDriverManager().install())
@@ -53,7 +76,15 @@ def iniciar_driver(
             options=options,
         )
 
-        logger.info('Google Chrome iniciado com sucesso.')
+        driver.execute_cdp_cmd(
+            'Page.setDownloadBehavior',
+            {'behavior': 'allow', 'downloadPath': download_dir},
+        )
+
+        logger.info(
+            'Google Chrome iniciado com sucesso. Downloads em: %s',
+            download_dir,
+        )
         return driver
 
     except WebDriverException as e:
