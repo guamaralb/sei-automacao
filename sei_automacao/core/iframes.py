@@ -16,8 +16,6 @@ def localizar_xpath_elemento_com_fallback_iframe(
     nome_iframe: str,
     xpath_elemento: str,
     tipo_busca: TipoBusca | None = None,
-    timeout_nomeado: int = 10,
-    timeout_fallback: int = 3,
 ) -> WebElement:
     """
     Tenta localizar `xpath_elemento` dentro do iframe chamado `nome_iframe`.
@@ -29,11 +27,14 @@ def localizar_xpath_elemento_com_fallback_iframe(
     """
     try:
         trocar_iframe(driver, nome_iframe, tipo_busca)
-        return WebDriverWait(driver, timeout_nomeado).until(
+        return WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, xpath_elemento))
         )
     except (TimeoutException, NoSuchElementException):
-        print("Não conseguiu achar o ifram, tentando achar o elemento em todos os iframes")
+        print(
+            'Não conseguiu achar o iframe, '
+            'tentando achar o elemento em todos os iframes'
+        )
         logging.warning(
             f"Iframe nomeado '{nome_iframe}' não encontrado ou elemento "
             f"ausente nele; buscando '{xpath_elemento}' em todos os "
@@ -56,7 +57,7 @@ def localizar_xpath_elemento_com_fallback_iframe(
             continue
 
         try:
-            element = WebDriverWait(driver, timeout_fallback).until(
+            element = WebDriverWait(driver, 3).until(
                 EC.presence_of_element_located((By.XPATH, xpath_elemento))
             )
             print('ACHOU')

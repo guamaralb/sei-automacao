@@ -6,6 +6,27 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 
+def clicar_img_reabrir_processo(driver: webdriver.Remote) -> None:
+    for i in range(3):
+        try:
+            img_reabrir_processo: WebElement = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    "//img[@alt='Reabrir Processo']",
+                ))
+            )
+            img_reabrir_processo.click()
+        except StaleElementReferenceException:
+            print(
+                f'Clique na img_reabrir_processo ficou stale na '
+                f'tentativa {i}. Tentando novamente...'
+            )
+
+    raise Exception(
+        'Elemento img_reabrir_processo ficou stale após 3 tentativas'
+    )
+
+
 def clicar_img_concluir_processo(driver: webdriver.Remote) -> None:
     for i in range(3):
         try:

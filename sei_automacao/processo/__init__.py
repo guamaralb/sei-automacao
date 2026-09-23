@@ -15,7 +15,12 @@ from sei_automacao.core.popups import fechar_popup_basico
 from sei_automacao.processo.arvore import (
     clicar_num_processo as clicar_num_processo,
 )
-from sei_automacao.processo.ciclo_de_vida import clicar_img_concluir_processo
+from sei_automacao.processo.ciclo_de_vida import (
+    clicar_img_concluir_processo,
+)
+from sei_automacao.processo.ciclo_de_vida import (
+    clicar_img_reabrir_processo as clicar_img_reabrir_processo,
+)
 from sei_automacao.processo.documentos import (
     clicar_incluir_doc,
     espera_documento_aparecer_arvore,
@@ -41,6 +46,7 @@ from sei_automacao.processo.marcadores import (
     procurar_sbmSalvar,
     selecionar_marcador,
 )
+from sei_automacao.utils.encontrar_elemento import encontrar_elemento
 
 
 def incluir_doc_externo(  # noqa: PLR0913, PLR0917
@@ -223,6 +229,42 @@ def enviar_email(  # noqa: PLR0913, PLR0917
 
 def concluir_processo(driver: webdriver.Remote) -> None:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrVisualizacao')
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
     clicar_img_concluir_processo(driver)
+    driver.switch_to.default_content()
+
+
+def reabrir_processo(driver: webdriver.Remote) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
+
+    img_acompanhamento_especial = encontrar_elemento(
+        driver=driver,
+        tipo_busca='XPATH',
+        termo_busca="//img[@alt='Acompanhamento Especial']",
+    )
+
+    if not img_acompanhamento_especial:
+        raise ValueError('Processo não foi carregado corretamente')
+
+    img_reabrir_processo = encontrar_elemento(
+        driver=driver,
+        tipo_busca='XPATH',
+        termo_busca="//img[@alt='Reabrir Processo']",
+        timeout=0,
+    )
+    if img_reabrir_processo:
+        img_reabrir_processo.click()
+    else:
+        img_concluir_processo = encontrar_elemento(
+            driver=driver,
+            tipo_busca='XPATH',
+            termo_busca="//img[@alt='Concluir Processo']",
+            timeout=0,
+        )
+        if img_concluir_processo:
+            ...
+        else:
+            raise ValueError('Não há como concluir nem reabrir o processo')
+
     driver.switch_to.default_content()
