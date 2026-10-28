@@ -8,6 +8,9 @@ from sei_automacao.core.iframes import trocar_iframe
 
 
 def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
+    driver.switch_to.default_content()
+    trocar_iframe(driver, 'ifrConteudoVisualizacao', tipo_busca='id')
+
     a_gerenciar_marcadores: WebElement = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((
             By.XPATH,
@@ -53,7 +56,9 @@ def procurar_sbmSalvar(driver: webdriver.Remote) -> bool:
     return bool(button_smbSalvar)
 
 
-def selecionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
+def selecionar_marcador_lista_suspensa(
+    driver: webdriver.Remote, marcador: str
+) -> None:
     dropdown: WebElement = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((
             By.CSS_SELECTOR,
@@ -93,3 +98,32 @@ def esperar_marcador_aparecer_apos_salvar(
         )
     except Exception:
         raise ValueError(f'Marcador "{marcador}" não encontrado após salvar')
+
+
+def selecionar_marcador_checkbox(
+    driver: webdriver.Remote, marcador: str
+) -> None:
+    xpath = f"//tr[td[2]//img[@title='{marcador}']]//input[@type='checkbox']"
+
+    checkbox = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.XPATH, xpath))
+    )
+
+    if not checkbox.is_selected():
+        driver.execute_script('arguments[0].click();', checkbox)
+    return checkbox
+
+
+def esperar_marcador_sumir_apos_salvar(
+    driver: webdriver.Remote, marcador: str
+) -> None:
+    try:
+        WebDriverWait(driver, 3).until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                f'//tbody/tr/td[contains(normalize-space(.), "{marcador}")]',
+            ))
+        )
+        raise ValueError(f'Marcador "{marcador}" encontrado após remover')
+    except Exception:
+        ...

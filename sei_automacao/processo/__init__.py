@@ -7,6 +7,7 @@ from selenium import webdriver
 from sei_automacao.core.buttons import (
     clicar_adicionar_btnAdicionar,
     clicar_enviar_sbmEnviar,
+    clicar_remover_btnRemover,
     clicar_salvar_btnSalvar,
     clicar_salvar_sbmSalvar,
 )
@@ -43,10 +44,14 @@ from sei_automacao.processo.marcadores import (
     checar_marcador_existe,
     clicar_gerenciar_marcadores,
     esperar_marcador_aparecer_apos_salvar,
+    esperar_marcador_sumir_apos_salvar,
     procurar_sbmSalvar,
-    selecionar_marcador,
+    selecionar_marcador_checkbox,
+    selecionar_marcador_lista_suspensa,
 )
-from sei_automacao.utils.encontrar_elemento import encontrar_elemento
+from sei_automacao.utils.encontrar_elemento import (
+    encontrar_elemento,
+)
 
 
 def incluir_doc_externo(  # noqa: PLR0913, PLR0917
@@ -168,9 +173,39 @@ def adicionar_marcador(driver: webdriver.Remote, marcador: str) -> None:
     if not procurar_sbmSalvar(driver):
         clicar_adicionar_btnAdicionar(driver)
 
-    selecionar_marcador(driver, marcador)
+    selecionar_marcador_lista_suspensa(driver, marcador)
     clicar_salvar_sbmSalvar(driver)
     esperar_marcador_aparecer_apos_salvar(driver, marcador)
+
+    driver.switch_to.default_content()
+
+
+def remover_marcador(driver: webdriver.Remote, marcadores: list[str]) -> None:
+    # Garante que a página retorna no menu do processo
+    driver.refresh()
+
+    for marcador in marcadores:
+        # A função checar_marcador_existe muda o iframe e retorna para default
+        if not (checar_marcador_existe(driver, marcador)):
+            return
+
+    trocar_iframe(driver, 'ifrConteudoVisualizacao')
+
+    clicar_gerenciar_marcadores(driver)
+
+    trocar_iframe(driver, 'ifrVisualizacao')
+
+    for marcador in marcadores:
+        selecionar_marcador_checkbox(driver, marcador)
+
+    clicar_remover_btnRemover(driver)
+    fechar_popup_basico(
+        driver,
+        msg_contains=(
+            'Confirma remoção dos Marcadores selecionados do processo?'
+        ),
+    )
+    esperar_marcador_sumir_apos_salvar(driver, marcador)
 
     driver.switch_to.default_content()
 

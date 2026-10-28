@@ -45,3 +45,10 @@ def clicar_enviar_btnEnviar(driver: webdriver.Remote) -> None:
         EC.element_to_be_clickable((By.XPATH, "//button[@name='btnEnviar']"))
     )
     button_adicionar.click()
+
+
+def clicar_remover_btnRemover(driver: webdriver.Remote) -> None:
+    button_salvar: WebElement = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, 'btnRemover'))
+    )
+    button_salvar.click()
