@@ -34,10 +34,6 @@ def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> None:
 
     qnt_pastas_antes = len(pastas_fechadas_antes) + len(pastas_abertas_antes)
 
-    print('len(pastas_fechadas_antes):', len(pastas_fechadas_antes))
-    print('len(pastas_abertas_antes):', len(pastas_abertas_antes))
-    print('qnt_pastas_antes:', qnt_pastas_antes)
-
     for pasta in pastas_fechadas_antes:
         pasta.click()
         time.sleep(0.5)
@@ -47,8 +43,6 @@ def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> None:
     )
 
     qnt_pastas_depois = len(pastas_abertas_depois)
-
-    print('len(pastas_abertas_depois):', len(pastas_abertas_depois))
 
     if qnt_pastas_antes != qnt_pastas_depois:
         raise Exception(
@@ -62,7 +56,6 @@ def verifica_esta_aguardando(arvore_elements: list[WebElement]) -> bool:
     aguardando = False
     for i, element in enumerate(arvore_elements):
         texto = element.text
-        print(f'{i}: {texto!r}')
         if texto == 'Aguarde...':
             aguardando = True
     return aguardando
