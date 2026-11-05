@@ -5,11 +5,7 @@ from selenium import webdriver
 
 from sei_automacao.auth.login import efetuar_login
 from sei_automacao.driver import iniciar_driver
-from sei_automacao.processo import (
-    clicar_gerenciar_marcadores,
-    remover_marcador,
-)
-from sei_automacao.processo.marcadores import listar_marcadores
+from sei_automacao.processo.arvore import listar_documentos_arvore
 from sei_automacao.ubiquo.busca import acessar_processo
 
 
@@ -25,10 +21,16 @@ def test_new_function():
         os.getenv('SEI_ORGAO'),
     )
 
-    acessar_processo(driver, '2010.01.0096589/2026-12')
-    clicar_gerenciar_marcadores(driver)
+    # 0 PASTAS
+    # acessar_processo(driver, '2010.01.0082932/2024-60')
 
-    marcadores = listar_marcadores(driver)
+    # 2 PASTAS
+    acessar_processo(driver, '2010.01.0072062/2024-28')
 
-    print('REMOVENDO:', marcadores)
-    remover_marcador(driver, marcadores)
+    # 3 PASTAS
+    # acessar_processo(driver, '2010.01.0099303/2026-66')
+
+    docs = listar_documentos_arvore(driver)
+
+    for i, doc in enumerate(docs):
+        print(i, doc)
