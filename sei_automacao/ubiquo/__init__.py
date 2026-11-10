@@ -7,6 +7,7 @@ from sei_automacao.navigation.menu import (
     preencher_especificacao_processo,
     selecionar_tipo_processo,
 )
+from sei_automacao.ubiquo.busca import acessar_processo
 from sei_automacao.ubiquo.unidade import (
     acessar_pagina_trocar_unidade,
     selecionar_unidade,
@@ -32,5 +33,6 @@ def iniciar_processo(
 
 def trocar_unidade(driver: webdriver.Remote, unidade: str) -> None:
     driver.switch_to.default_content()
+    acessar_processo(driver, '2010.01.0100691/2026-32')
     acessar_pagina_trocar_unidade(driver)
     selecionar_unidade(driver, unidade)

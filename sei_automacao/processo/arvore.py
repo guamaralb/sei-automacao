@@ -110,14 +110,15 @@ def listar_documentos_arvore(driver: webdriver.Remote) -> list[dict]:
     arvore_list: list[dict] = []
 
     for item_text_and_num, item_unidade in zip(textos[::2], textos[1::2]):
-        
         try:
-            item_text, item_num_com_parenteses = item_text_and_num.rsplit(' ', 1)
+            item_text, item_num_com_parenteses = item_text_and_num.rsplit(
+                ' ', 1
+            )
             item_num = item_num_com_parenteses.strip('()')
         except ValueError:
             item_text = item_text_and_num.strip()
             item_num = 'Sem Numero'
-            
+
         arvore_list.append({
             'numero_sei': item_num,
             'nome_arvore': item_text,
