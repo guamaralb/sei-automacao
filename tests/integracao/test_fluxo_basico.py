@@ -1,23 +1,38 @@
+"""Fluxo básico no SEI real. Rode com ``pytest -m integracao``.
+
+Precisa de um .env com SEI_URL, SEI_LOGIN, SEI_SENHA, SEI_ORGAO e
+SEI_UNIDADE.
+"""
+
 import os
 
-from dotenv import load_dotenv
-from selenium import webdriver
+import pytest
 
-from sei_automacao.auth.login import efetuar_login
-from sei_automacao.driver import iniciar_driver
-from sei_automacao.ubiquo import trocar_unidade
+from sei_automacao import efetuar_login, iniciar_sei, trocar_unidade
+
+pytestmark = pytest.mark.integracao
+
+_VARIAVEIS = ('SEI_URL', 'SEI_LOGIN', 'SEI_SENHA', 'SEI_ORGAO', 'SEI_UNIDADE')
 
 
-def test_new_function():
-    load_dotenv()
+@pytest.fixture
+def driver():
+    dotenv = pytest.importorskip('dotenv')
+    dotenv.load_dotenv()
+    faltando = [v for v in _VARIAVEIS if not os.getenv(v)]
+    if faltando:
+        pytest.skip(f'Variáveis ausentes no .env: {faltando}')
 
-    driver: webdriver.Remote = iniciar_driver()
-    driver.get('https://www.sei.mg.gov.br/')
+    driver = iniciar_sei(os.environ['SEI_URL'])
+    yield driver
+    driver.quit()
+
+
+def test_login_e_troca_de_unidade(driver):
     efetuar_login(
         driver,
-        os.getenv('SEI_LOGIN'),
-        os.getenv('SEI_SENHA'),
-        os.getenv('SEI_ORGAO'),
+        os.environ['SEI_LOGIN'],
+        os.environ['SEI_SENHA'],
+        os.environ['SEI_ORGAO'],
     )
-
-    trocar_unidade(driver, 'IPSEMG/GEACS - Utilização')
+    trocar_unidade(driver, os.environ['SEI_UNIDADE'])

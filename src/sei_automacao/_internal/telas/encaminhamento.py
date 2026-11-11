@@ -7,18 +7,26 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from sei_automacao._internal.espera import TIMEOUT_PADRAO
 
-def clicar_enviar_processo(driver: webdriver.Remote) -> None:
-    img_enviar_processo: WebElement = WebDriverWait(driver, 10).until(
+
+def clicar_enviar_processo(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    img_enviar_processo: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((By.XPATH, "//img[@alt='Enviar Processo']"))
     )
     img_enviar_processo.click()
 
 
 def preencher_unidade(
-    driver: webdriver.Remote, unidade: str, desce_lista: int = 1
+    driver: webdriver.Remote,
+    unidade: str,
+    desce_lista: int = 1,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    input_unidade: WebElement = WebDriverWait(driver, 10).until(
+    input_unidade: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((By.ID, 'txtUnidade'))
     )
     input_unidade.send_keys(unidade)
@@ -30,23 +38,13 @@ def preencher_unidade(
     input_unidade.send_keys(Keys.ENTER)
 
 
-def selecionar_manter_aberto(driver: webdriver.Remote) -> None:
-    label: WebElement = WebDriverWait(driver, 10).until(
+def selecionar_manter_aberto(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    label: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((
             By.CSS_SELECTOR,
             "label[for='chkSinManterAberto']",
         ))
     )
     label.click()
-
-
-def selecionar_processo_arvore(
-    driver: webdriver.Remote, num_processo: str
-) -> None:
-    span_processo: WebElement = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((
-            By.XPATH,
-            f"//span[contains(text(), '{num_processo}')]",
-        ))
-    )
-    span_processo.click()

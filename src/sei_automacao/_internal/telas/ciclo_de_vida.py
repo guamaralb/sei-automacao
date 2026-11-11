@@ -1,3 +1,5 @@
+import logging
+
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
@@ -5,48 +7,43 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from sei_automacao._internal.espera import TIMEOUT_PADRAO
+from sei_automacao.exceptions import AcaoNaoConcluida
 
-def clicar_img_reabrir_processo(driver: webdriver.Remote) -> None:
+logger = logging.getLogger(__name__)
+
+
+def _clicar_img_com_retentativa(
+    driver: webdriver.Remote, alt: str, timeout: float
+) -> None:
     for i in range(3):
         try:
-            img_reabrir_processo: WebElement = WebDriverWait(driver, 10).until(
+            img: WebElement = WebDriverWait(driver, timeout).until(
                 EC.presence_of_element_located((
                     By.XPATH,
-                    "//img[@alt='Reabrir Processo']",
+                    f"//img[@alt='{alt}']",
                 ))
             )
-            img_reabrir_processo.click()
-        except StaleElementReferenceException:
-            print(
-                f'Clique na img_reabrir_processo ficou stale na '
-                f'tentativa {i}. Tentando novamente...'
-            )
-
-    raise Exception(
-        'Elemento img_reabrir_processo ficou stale após 3 tentativas'
-    )
-
-
-def clicar_img_concluir_processo(driver: webdriver.Remote) -> None:
-    for i in range(3):
-        try:
-            img_concluir_processo: WebElement = WebDriverWait(
-                driver, 10
-            ).until(
-                EC.presence_of_element_located((
-                    By.XPATH,
-                    "//img[@alt='Concluir Processo']",
-                ))
-            )
-            img_concluir_processo.click()
+            img.click()
             return
-
         except StaleElementReferenceException:
-            print(
-                f'Clique na img_concluir_processo ficou stale na '
-                f'tentativa {i}. Tentando novamente...'
+            logger.debug(
+                "Clique em '%s' ficou stale na tentativa %d; tentando "
+                'novamente',
+                alt,
+                i + 1,
             )
 
-    raise Exception(
-        'Elemento img_concluir_processo ficou stale após 3 tentativas'
-    )
+    raise AcaoNaoConcluida(f"Elemento '{alt}' ficou stale após 3 tentativas")
+
+
+def clicar_img_reabrir_processo(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    _clicar_img_com_retentativa(driver, 'Reabrir Processo', timeout)
+
+
+def clicar_img_concluir_processo(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    _clicar_img_com_retentativa(driver, 'Concluir Processo', timeout)

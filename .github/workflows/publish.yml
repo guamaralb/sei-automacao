@@ -1,0 +1,39 @@
+# Publica no PyPI quando uma release é criada no GitHub.
+# Usa Trusted Publishing (sem token): configure o projeto em
+# https://pypi.org/manage/account/publishing/ com este repositório,
+# o workflow "publish.yml" e o ambiente "pypi".
+name: Publicar no PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Instalar Poetry
+        run: pipx install poetry
+      - name: Build
+        run: poetry build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publicar:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

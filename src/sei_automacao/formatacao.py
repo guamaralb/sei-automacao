@@ -1,7 +1,16 @@
+"""Formatação de valores para textos de documentos."""
+
 from num2words import num2words
+
+__all__ = ['num_extenso_formatado']
 
 
 def num_extenso_formatado(valor: float) -> tuple[str, str, str]:
+    """Formata um valor em reais e o escreve por extenso.
+
+    >>> num_extenso_formatado(1234.5)
+    ('1.234,50', 'mil, duzentos e trinta e quatro', 'cinquenta')
+    """
     parte_inteira: int = int(valor)
     parte_decimal: int = round((valor - parte_inteira) * 100)
 

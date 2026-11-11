@@ -11,25 +11,35 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sei_automacao.core.iframes import trocar_iframe
+from sei_automacao._internal.espera import TIMEOUT_PADRAO, xpath_literal
+from sei_automacao._internal.iframes import trocar_iframe
+from sei_automacao.exceptions import (
+    AcaoNaoConcluida,
+    DocumentoNaoEncontrado,
+    ElementoNaoEncontrado,
+)
+
+# Árvores grandes demoram para abrir todas as pastas
+_TIMEOUT_MIN_PASTAS: float = 30
+
+_XPATH_ITENS_ARVORE = '//div[@class="infraArvore"]/a/span'
+_PADRAO_NUM_PROCESSO = r'\d{4}\.\d{2}\.\d{7}/\d{4}-\d{2}'
 
 
-def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> None:
-    """
-    Função deve ser chamada sempre dentro de "listar_documentos_arvore"
-    """
+def _xpath_pasta(img: str) -> str:
+    return (
+        f'//img[contains(@src, "{img}")]'
+        '/parent::a/following-sibling::a[1]/span'
+    )
 
-    def xpath_pasta(img: str):
-        return (
-            f'//img[contains(@src, "{img}")]'
-            '/parent::a/following-sibling::a[1]/span'
-        )
 
+def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> int:
+    """Deve ser chamada com o driver já no iframe da árvore."""
     pastas_fechadas_antes: list[WebElement] = driver.find_elements(
-        By.XPATH, xpath_pasta(img='processo_fechado.svg')
+        By.XPATH, _xpath_pasta(img='processo_fechado.svg')
     )
     pastas_abertas_antes: list[WebElement] = driver.find_elements(
-        By.XPATH, xpath_pasta(img='processo_aberto.svg')
+        By.XPATH, _xpath_pasta(img='processo_aberto.svg')
     )
 
     qnt_pastas_antes = len(pastas_fechadas_antes) + len(pastas_abertas_antes)
@@ -39,38 +49,33 @@ def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> None:
         time.sleep(0.5)
 
     pastas_abertas_depois: list[WebElement] = driver.find_elements(
-        By.XPATH, xpath_pasta(img='processo_aberto.svg')
+        By.XPATH, _xpath_pasta(img='processo_aberto.svg')
     )
 
     qnt_pastas_depois = len(pastas_abertas_depois)
 
     if qnt_pastas_antes != qnt_pastas_depois:
-        raise Exception(
+        raise AcaoNaoConcluida(
             'Identificado um número inconsistente de pastas na arvore'
         )
 
     return qnt_pastas_depois
 
 
-def verifica_esta_aguardando(arvore_elements: list[WebElement]) -> bool:
-    aguardando = False
-    for i, element in enumerate(arvore_elements):
-        texto = element.text
-        if texto == 'Aguarde...':
-            aguardando = True
-    return aguardando
+def _esta_aguardando(arvore_elements: list[WebElement]) -> bool:
+    return any(element.text == 'Aguarde...' for element in arvore_elements)
 
 
 def espera_pastas_abrirem_e_retorna_elementos(
-    driver: webdriver.Remote, timeout: float = 30
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
 ) -> list[WebElement]:
-    limite = time.monotonic() + timeout
+    limite = time.monotonic() + max(timeout, _TIMEOUT_MIN_PASTAS)
     while time.monotonic() < limite:
         try:
             arvore_elements = driver.find_elements(
-                By.XPATH, '//div[@class="infraArvore"]/a/span'
+                By.XPATH, _XPATH_ITENS_ARVORE
             )
-            if not verifica_esta_aguardando(arvore_elements):
+            if not _esta_aguardando(arvore_elements):
                 return arvore_elements
         except StaleElementReferenceException:
             pass  # a árvore recarregou no meio da leitura; tenta de novo
@@ -79,19 +84,18 @@ def espera_pastas_abrirem_e_retorna_elementos(
     raise TimeoutError('Pastas da árvore não terminaram de carregar.')
 
 
-def listar_documentos_arvore(driver: webdriver.Remote) -> list[dict]:
+def listar_documentos_arvore(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> list[dict]:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrArvore')
+    trocar_iframe(driver, 'ifrArvore', timeout=timeout)
 
     abrir_todas_pastas_arvore(driver)
 
     # Só para esperar o "Aguarde..." sumir
-    espera_pastas_abrirem_e_retorna_elementos(driver)
+    espera_pastas_abrirem_e_retorna_elementos(driver, timeout=timeout)
 
-    xpath = (
-        '//div[@class="infraArvore"]/a/span'
-        '[not(starts-with(@id, "spanPASTA"))]'
-    )
+    xpath = f'{_XPATH_ITENS_ARVORE}[not(starts-with(@id, "spanPASTA"))]'
 
     # Busca de novo, agora sem as pastas
     itens = driver.find_elements(By.XPATH, xpath)
@@ -102,7 +106,7 @@ def listar_documentos_arvore(driver: webdriver.Remote) -> list[dict]:
     textos = [item.text for item in itens]
 
     if len(textos) % 2 != 0:
-        raise Exception(
+        raise AcaoNaoConcluida(
             f'Número ímpar de itens na árvore ({len(textos)}); '
             'esperado apenas duplas documento/unidade'
         )
@@ -132,60 +136,65 @@ def selecionar_doc_arvore(
     driver: webdriver.Remote,
     numero_sei: str | None = None,
     nome: str | None = None,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
     if numero_sei is None and nome is None:
-        raise Exception('Nenhum termo inserido para busca')
+        raise ValueError('Informe numero_sei ou nome para a busca')
 
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrArvore')
+    trocar_iframe(driver, 'ifrArvore', timeout=timeout)
 
-    doc_element: WebElement = None
-
-    try:
-        doc_element = driver.find_element(
-            By.XPATH, f'//a[span[contains(text(), "{numero_sei}")]]'
-        )
-
-    except NoSuchElementException:
+    doc_element: WebElement | None = None
+    for termo in (numero_sei, nome):
+        if termo is None:
+            continue
         try:
             doc_element = driver.find_element(
-                By.XPATH, f'//a[span[contains(text(), "{nome}")]]'
+                By.XPATH,
+                f'//a[span[contains(text(), {xpath_literal(termo)})]]',
             )
-
+            break
         except NoSuchElementException:
-            raise Exception('Documento não encontrado')
+            continue
+
+    if doc_element is None:
+        driver.switch_to.default_content()
+        raise DocumentoNaoEncontrado(
+            f'Documento não encontrado (numero_sei={numero_sei!r}, '
+            f'nome={nome!r})'
+        )
 
     doc_element.click()
 
     # Espera o iFrame do documento em si carregar
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrConteudoVisualizacao')
-    trocar_iframe(driver, 'ifrVisualizacao')
+    trocar_iframe(driver, 'ifrConteudoVisualizacao', timeout=timeout)
+    trocar_iframe(driver, 'ifrVisualizacao', timeout=timeout)
 
     driver.switch_to.default_content()
 
 
-def clicar_num_processo(driver: webdriver.Remote) -> None:
+def clicar_num_processo(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
     driver.switch_to.default_content()
 
-    trocar_iframe(driver=driver, iframe='ifrArvore')
+    trocar_iframe(driver, 'ifrArvore', timeout=timeout)
 
-    padrao_processo = r'\d{4}\.\d{2}\.\d{7}/\d{4}-\d{2}'
-
-    spans: list[WebElement] = WebDriverWait(driver, 10).until(
-        EC.presence_of_all_elements_located((
-            By.XPATH,
-            '//div[@class="infraArvore"]/a/span',
-        ))
+    spans: list[WebElement] = WebDriverWait(driver, timeout).until(
+        EC.presence_of_all_elements_located((By.XPATH, _XPATH_ITENS_ARVORE))
     )
 
     span_num_processo = next(
-        (span for span in spans if re.search(padrao_processo, span.text)), None
+        (span for span in spans if re.search(_PADRAO_NUM_PROCESSO, span.text)),
+        None,
     )
 
     if span_num_processo is None:
-        raise ValueError(
-            'Nenhum número de processo encontrado no padrão informado.'
+        driver.switch_to.default_content()
+        raise ElementoNaoEncontrado(
+            'Nenhum número de processo encontrado na árvore.'
         )
 
     span_num_processo.click()

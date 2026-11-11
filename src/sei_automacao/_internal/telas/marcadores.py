@@ -1,17 +1,40 @@
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sei_automacao.core.iframes import trocar_iframe
+from sei_automacao._internal.espera import (
+    TIMEOUT_PADRAO,
+    TIMEOUT_SONDAGEM,
+    xpath_literal,
+)
+from sei_automacao._internal.iframes import trocar_iframe
+from sei_automacao.exceptions import MarcadorNaoEncontrado
 
 
-def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
+def _xpath_linha_marcador(marcador: str) -> str:
+    return (
+        '//tbody/tr/td[contains(normalize-space(.), '
+        f'{xpath_literal(marcador)})]'
+    )
+
+
+def normalizar_espacos(texto: str) -> str:
+    """Equivalente ao ``normalize-space()`` do XPath."""
+    return ' '.join(texto.split())
+
+
+def clicar_gerenciar_marcadores(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrConteudoVisualizacao', tipo_busca='id')
+    trocar_iframe(
+        driver, 'ifrConteudoVisualizacao', tipo_busca='id', timeout=timeout
+    )
 
-    a_gerenciar_marcadores: WebElement = WebDriverWait(driver, 10).until(
+    a_gerenciar_marcadores: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((
             By.XPATH,
             "//img[@alt='Gerenciar Marcador']/ancestor::a[1]",
@@ -20,9 +43,11 @@ def clicar_gerenciar_marcadores(driver: webdriver.Remote) -> None:
     a_gerenciar_marcadores.click()
 
 
-def listar_marcadores(driver: webdriver.Remote) -> list[str]:
+def listar_marcadores_arvore(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> list[str]:
     driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrArvore')
+    trocar_iframe(driver, 'ifrArvore', timeout=timeout)
 
     lista_marcadores: list[str] = []
 
@@ -39,27 +64,33 @@ def listar_marcadores(driver: webdriver.Remote) -> list[str]:
     return lista_marcadores
 
 
-def checar_marcador_existe(
-    driver: webdriver.Remote, nome_marcador: str
-) -> bool:
-    lista_marcadores = listar_marcadores(driver)
-
-    marcador_existe: bool = nome_marcador in lista_marcadores
-
-    return marcador_existe
-
-
 def procurar_sbmSalvar(driver: webdriver.Remote) -> bool:
-    button_smbSalvar: list[WebElement] = driver.find_elements(
-        By.ID, 'sbmSalvar'
+    return bool(driver.find_elements(By.ID, 'sbmSalvar'))
+
+
+def ler_opcoes_marcador(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> set[str]:
+    """Nomes da lista suspensa de marcadores (tela de adicionar marcador)."""
+    WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, '#selMarcador'))
     )
-    return bool(button_smbSalvar)
+    opcoes = driver.find_elements(
+        By.CSS_SELECTOR, '#selMarcador label.dd-option-text'
+    )
+    return {
+        normalizar_espacos(o.get_attribute('textContent') or '')
+        for o in opcoes
+    } - {''}
 
 
 def selecionar_marcador_lista_suspensa(
-    driver: webdriver.Remote, marcador: str
+    driver: webdriver.Remote,
+    marcador: str,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    dropdown: WebElement = WebDriverWait(driver, 10).until(
+    dropdown: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((
             By.CSS_SELECTOR,
             '#selMarcador .dd-select',
@@ -67,63 +98,79 @@ def selecionar_marcador_lista_suspensa(
     )
     dropdown.click()
 
-    opcao_planilhado: WebElement = WebDriverWait(driver, 10).until(
+    opcao: WebElement = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((
             By.XPATH,
             "//label[@class='dd-option-text' and "
-            f"normalize-space(text())='{marcador}']",
+            f'normalize-space(text())={xpath_literal(marcador)}]',
         ))
     )
-    opcao_planilhado.click()
+    opcao.click()
 
     # Esperar o selecionado aparecer
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((
             By.XPATH,
             "//label[@class='dd-selected-text' and "
-            f"normalize-space(text())='{marcador}']",
+            f'normalize-space(text())={xpath_literal(marcador)}]',
         ))
     )
 
 
 def esperar_marcador_aparecer_apos_salvar(
-    driver: webdriver.Remote, marcador: str
+    driver: webdriver.Remote,
+    marcador: str,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
     try:
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((
                 By.XPATH,
-                f'//tbody/tr/td[contains(normalize-space(.), "{marcador}")]',
+                _xpath_linha_marcador(marcador),
             ))
         )
-    except Exception:
-        raise ValueError(f'Marcador "{marcador}" não encontrado após salvar')
+    except TimeoutException:
+        raise MarcadorNaoEncontrado(
+            f'Marcador "{marcador}" não encontrado após salvar'
+        ) from None
 
 
 def selecionar_marcador_checkbox(
-    driver: webdriver.Remote, marcador: str
+    driver: webdriver.Remote,
+    marcador: str,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    xpath = f"//tr[td[2]//img[@title='{marcador}']]//input[@type='checkbox']"
+    xpath = (
+        f'//tr[td[2]//img[@title={xpath_literal(marcador)}]]'
+        "//input[@type='checkbox']"
+    )
 
-    checkbox = WebDriverWait(driver, 10).until(
+    checkbox: WebElement = WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((By.XPATH, xpath))
     )
 
     if not checkbox.is_selected():
         driver.execute_script('arguments[0].click();', checkbox)
-    return checkbox
 
 
 def esperar_marcador_sumir_apos_salvar(
     driver: webdriver.Remote, marcador: str
 ) -> None:
+    """Levanta :class:`MarcadorNaoEncontrado` se o marcador ainda estiver
+    na tabela depois de :data:`TIMEOUT_SONDAGEM` segundos."""
     try:
-        WebDriverWait(driver, 3).until(
-            EC.presence_of_element_located((
+        WebDriverWait(driver, TIMEOUT_SONDAGEM).until(
+            EC.invisibility_of_element_located((
                 By.XPATH,
-                f'//tbody/tr/td[contains(normalize-space(.), "{marcador}")]',
+                # Mesma linha usada para marcar o checkbox (título exato do
+                # marcador), para não confundir com marcadores de nome
+                # parecido
+                f'//tr[td[2]//img[@title={xpath_literal(marcador)}]]',
             ))
         )
-        raise ValueError(f'Marcador "{marcador}" encontrado após remover')
-    except Exception:
-        ...
+    except TimeoutException:
+        raise MarcadorNaoEncontrado(
+            f'Marcador "{marcador}" continua no processo após remover'
+        ) from None

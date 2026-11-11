@@ -1,6 +1,7 @@
+import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
 
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -12,16 +13,65 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from sei_automacao.core.iframes import (
+from sei_automacao._internal.espera import (
+    TIMEOUT_PADRAO,
+    TIMEOUT_SONDAGEM,
+    xpath_literal,
+)
+from sei_automacao._internal.iframes import (
     localizar_xpath_elemento_com_fallback_iframe,
 )
-from sei_automacao.utils.acesso import selecionar_nivel_acesso
+from sei_automacao._internal.nivel_acesso import (
+    NivelAcesso,
+    selecionar_nivel_acesso,
+)
+from sei_automacao.exceptions import AcaoNaoConcluida, OpcaoNaoSuportada
+
+logger = logging.getLogger(__name__)
 
 NUM_JANELAS_COM_POPUP = 2
 
+# Upload do anexo e gravação do editor podem demorar
+_TIMEOUT_MIN_SALVAR: float = 30
+# A tela de tipos mostra o link "exibir apenas..." logo que carrega
+_TIMEOUT_SONDAGEM_TIPOS: float = 2
 
-def clicar_incluir_doc(driver: webdriver.Remote) -> None:
-    img_incluir_doc: WebElement = WebDriverWait(driver, 10).until(
+_XPATH_TIPOS_DOC: dict[str, str] = {
+    'Externo': "//tr[@data-desc=' externo']",
+    'Memorando': "//tr[@data-desc='memorando']",
+    'Nota Técnica': "//tr[@data-desc='nota tecnica']",
+}
+
+_XPATH_FORMATOS: dict[str, str] = {
+    'Nato-digital': '//*[@id="divOptNato"]/div/label',
+}
+
+# Substitui o marcador pelo texto sem interpretar "$&" e afins do replace
+_JS_SUBSTITUIR = (
+    'arguments[0].innerHTML = arguments[0].innerHTML'
+    '.replace(arguments[1], () => arguments[2]);'
+)
+
+
+def _com_retentativa_stale(descricao: str, acao: Callable[[], None]) -> None:
+    for _ in range(5):
+        try:
+            acao()
+            return
+        except StaleElementReferenceException:
+            logger.debug(
+                'Elemento ficou stale ao %s; tentando novamente', descricao
+            )
+    raise AcaoNaoConcluida(
+        f'Não foi possível {descricao} após várias tentativas '
+        '(stale repetido).'
+    )
+
+
+def clicar_incluir_doc(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    img_incluir_doc: WebElement = WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((
             By.XPATH,
             "//img[@alt='Incluir Documento']",
@@ -30,9 +80,18 @@ def clicar_incluir_doc(driver: webdriver.Remote) -> None:
     img_incluir_doc.click()
 
 
-def selecionar_tipo_doc(driver: webdriver.Remote, tipo: str) -> None:
+def selecionar_tipo_doc(
+    driver: webdriver.Remote, tipo: str, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
     try:
-        WebDriverWait(driver, 2).until(
+        xpath_tipo_doc = _XPATH_TIPOS_DOC[tipo]
+    except KeyError:
+        raise OpcaoNaoSuportada(
+            f"Tipo de documento '{tipo}' não implementado"
+        ) from None
+
+    try:
+        WebDriverWait(driver, _TIMEOUT_SONDAGEM_TIPOS).until(
             EC.presence_of_element_located((
                 By.XPATH,
                 "//img[@alt='Exibir apenas os tipos já "
@@ -41,7 +100,9 @@ def selecionar_tipo_doc(driver: webdriver.Remote, tipo: str) -> None:
         )
 
     except TimeoutException:
-        a_exibir_todos_tipos_doc: WebElement = WebDriverWait(driver, 10).until(
+        a_exibir_todos_tipos_doc: WebElement = WebDriverWait(
+            driver, timeout
+        ).until(
             EC.presence_of_element_located((
                 By.XPATH,
                 "//img[@alt='Exibir todos os tipos']",
@@ -49,177 +110,98 @@ def selecionar_tipo_doc(driver: webdriver.Remote, tipo: str) -> None:
         )
         a_exibir_todos_tipos_doc.click()
 
-    xpath_tipo_doc: str = ''
+    def clicar() -> None:
+        WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, xpath_tipo_doc))
+        ).click()
 
-    if tipo == 'Externo':
-        xpath_tipo_doc = "//tr[@data-desc=' externo']"
-    elif tipo == 'Memorando':
-        xpath_tipo_doc = "//tr[@data-desc='memorando']"
-    elif tipo == 'Nota Técnica':
-        xpath_tipo_doc = "//tr[@data-desc='nota tecnica']"
-    else:
-        raise Exception(f"Tipo de documento '{tipo}' não implementada")
-
-    for _ in range(5):
-        try:
-            elemento: WebElement = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, xpath_tipo_doc))
-            )
-            elemento.click()
-            return
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao escolher o tipo de documento. '
-                'Recarregando e tentando novamente...'
-            )
-
-    raise Exception(
-        'Não foi possível clicar no tipo de documento após '
-        'várias tentativas (stale repetido).'
-    )
+    _com_retentativa_stale('escolher o tipo de documento', clicar)
 
 
-def preencher_metadados_doc_externo(  # noqa: PLR0913, PLR0917, PLR0912
+def preencher_metadados_doc_externo(  # noqa: PLR0913, PLR0917
     driver: webdriver.Remote,
     tipo_doc: str,
     num: str,
     formato: str,
     data: str,
     path_anexo: Path,
-    nivel_acesso: str,
-    hipotese_legal: Literal[
-        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
-    ] = '',
+    nivel_acesso: NivelAcesso,
+    hipotese_legal: str | None = '',
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    for _ in range(5):
-        try:
-            input_data: WebElement = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.ID, 'txtDataElaboracao'))
-            )
-            input_data.send_keys(data)
-            break
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao preencher a data do documento. '
-                'Recarregando e tentando novamente...'
-            )
-    else:
-        raise Exception(
-            'Não foi possível preencher a data do documento após '
-            'várias tentativas (stale repetido).'
+    try:
+        xpath_formato = _XPATH_FORMATOS[formato]
+    except KeyError:
+        raise OpcaoNaoSuportada(
+            f'Opção de formato ainda não implementada: {formato}'
+        ) from None
+
+    def preencher_data() -> None:
+        WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.ID, 'txtDataElaboracao'))
+        ).send_keys(data)
+
+    def selecionar_tipo() -> None:
+        Select(driver.find_element(By.ID, 'selSerie')).select_by_visible_text(
+            tipo_doc
         )
 
-    for _ in range(5):
-        try:
-            select_tipo_doc: Select = Select(
-                driver.find_element(By.ID, 'selSerie')
-            )
-            select_tipo_doc.select_by_visible_text(tipo_doc)
-            break
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao selecionar o tipo de documento. '
-                'Recarregando e tentando novamente...'
-            )
-    else:
-        raise Exception(
-            'Não foi possível selecionar o tipo de documento após '
-            'várias tentativas (stale repetido).'
-        )
+    def preencher_numero() -> None:
+        time.sleep(2)
+        driver.find_element(By.ID, 'txtNumero').send_keys(num)
+        time.sleep(2)
 
-    for _ in range(5):
-        try:
-            time.sleep(2)
-            input_num: WebElement = driver.find_element(By.ID, 'txtNumero')
-            input_num.send_keys(num)
-            time.sleep(2)
-            break
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao preencher o numero do documento. '
-                'Recarregando e tentando novamente...'
-            )
-    else:
-        raise Exception(
-            'Não foi possível preencher o numero do documento após '
-            'várias tentativas (stale repetido).'
-        )
+    def selecionar_formato() -> None:
+        driver.find_element(By.XPATH, xpath_formato).click()
 
-    formato_XPATH: str = ''
-    if formato == 'Nato-digital':
-        formato_XPATH = '//*[@id="divOptNato"]/div/label'
-    else:
-        raise Exception(f'Opção de formato ainda não implementada: {formato}')
+    def anexar_arquivo() -> None:
+        driver.find_element(By.ID, 'filArquivo').send_keys(str(path_anexo))
 
-    for _ in range(5):
-        try:
-            label_formato: WebElement = driver.find_element(
-                By.XPATH, formato_XPATH
-            )
-            label_formato.click()
-            break
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao selecionar o formato do '
-                'documento. Recarregando e tentando novamente...'
-            )
-    else:
-        raise Exception(
-            'Não foi possível selecionar o formato do documento após '
-            'várias tentativas (stale repetido).'
-        )
+    _com_retentativa_stale('preencher a data do documento', preencher_data)
+    _com_retentativa_stale('selecionar o tipo de documento', selecionar_tipo)
+    _com_retentativa_stale('preencher o numero do documento', preencher_numero)
+    _com_retentativa_stale(
+        'selecionar o formato do documento', selecionar_formato
+    )
 
-    selecionar_nivel_acesso(driver, nivel_acesso, hipotese_legal)
+    selecionar_nivel_acesso(
+        driver, nivel_acesso, hipotese_legal, timeout=timeout
+    )
 
-    for _ in range(5):
-        try:
-            input_arq: WebElement = driver.find_element(By.ID, 'filArquivo')
-            input_arq.send_keys(str(path_anexo))
-            break
-        except StaleElementReferenceException:
-            print(
-                'Elemento ficou stale ao anexar o arquivo. '
-                'Recarregando e tentando novamente...'
-            )
-    else:
-        raise Exception(
-            'Não foi possível anexar o arquivo após '
-            'várias tentativas (stale repetido).'
-        )
+    _com_retentativa_stale('anexar o arquivo', anexar_arquivo)
 
-    nome_arq: str = path_anexo.name
-
-    WebDriverWait(driver, 30).until(
+    WebDriverWait(driver, max(timeout, _TIMEOUT_MIN_SALVAR)).until(
         EC.presence_of_element_located((
             By.XPATH,
-            f"//td/div[contains(text(), '{nome_arq}')]",
+            f'//td/div[contains(text(), {xpath_literal(path_anexo.name)})]',
         ))
     )
 
 
 def preencher_metadados_doc_sei(
     driver: webdriver.Remote,
-    nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'],
-    hipotese_legal: Literal[
-        '', 'Informação Pessoal (Art. 31 da Lei nº 12.527/2011)'
-    ],
+    nivel_acesso: NivelAcesso,
+    hipotese_legal: str | None,
     nome: str = '',
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
     if nome:
-        input_nome: WebElement = WebDriverWait(driver, 10).until(
+        input_nome: WebElement = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((By.ID, 'txtNomeArvore'))
         )
         input_nome.send_keys(nome)
 
-    selecionar_nivel_acesso(driver, nivel_acesso, hipotese_legal)
+    selecionar_nivel_acesso(
+        driver, nivel_acesso, hipotese_legal, timeout=timeout
+    )
 
 
-def inserir_conteudo_doc_sei_simples(
-    driver: webdriver.Remote, texto: str
+def _ir_para_janela_editor(
+    driver: webdriver.Remote, janela_principal: str, timeout: float
 ) -> None:
-    janela_principal: str = driver.current_window_handle
-
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, timeout).until(
         lambda d: len(d.window_handles) == NUM_JANELAS_COM_POPUP
     )
     for handle in driver.window_handles:
@@ -227,9 +209,27 @@ def inserir_conteudo_doc_sei_simples(
             driver.switch_to.window(handle)
             break
 
+
+def _fechar_janelas_extras(
+    driver: webdriver.Remote, janela_principal: str
+) -> None:
+    for handle in driver.window_handles:
+        if handle != janela_principal:
+            driver.switch_to.window(handle)
+            driver.close()
+    driver.switch_to.window(janela_principal)
+
+
+def inserir_conteudo_doc_sei_simples(
+    driver: webdriver.Remote, texto: str, *, timeout: float = TIMEOUT_PADRAO
+) -> None:
+    janela_principal: str = driver.current_window_handle
+
+    _ir_para_janela_editor(driver, janela_principal, timeout)
+
     driver.switch_to.default_content()
 
-    iframe_corpo: WebElement = WebDriverWait(driver, 10).until(
+    iframe_corpo: WebElement = WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((
             By.XPATH,
             "//iframe[@aria-describedby='cke_250']",
@@ -246,7 +246,7 @@ def inserir_conteudo_doc_sei_simples(
     paragrafo: WebElement | None = None
     for seletor in seletores:
         try:
-            paragrafo = WebDriverWait(driver, 3).until(
+            paragrafo = WebDriverWait(driver, TIMEOUT_SONDAGEM).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, seletor))
             )
             break
@@ -270,68 +270,63 @@ def inserir_conteudo_doc_sei_simples(
     driver.find_element(By.TAG_NAME, 'body').click()
     time.sleep(5)
 
-    button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
+    button_salvar_doc: WebElement = WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((By.ID, 'cke_207'))
     )
     driver.execute_script('arguments[0].click();', button_salvar_doc)
-    WebDriverWait(driver, 30).until(
+    WebDriverWait(driver, max(timeout, _TIMEOUT_MIN_SALVAR)).until(
         lambda d: (
             'cke_button_off'
-            in d.find_element(By.ID, 'cke_207').get_attribute('class')
+            in (d.find_element(By.ID, 'cke_207').get_attribute('class') or '')
         )
     )
     driver.close()
     driver.switch_to.window(janela_principal)
 
 
-def inserir_conteudo_doc_sei_memo(
+def inserir_conteudo_doc_sei_memo(  # noqa: PLR0913, PLR0917
     driver: webdriver.Remote,
     vocativo: str,
     destinatario_nome: str,
     assunto: str,
     texto_principal: str,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
     janela_principal: str = driver.current_window_handle
 
     try:
-        WebDriverWait(driver, 10).until(
-            lambda d: len(d.window_handles) == NUM_JANELAS_COM_POPUP
-        )
-
-        for handle in driver.window_handles:
-            if handle != janela_principal:
-                driver.switch_to.window(handle)
-                break
+        _ir_para_janela_editor(driver, janela_principal, timeout)
 
         p_cargo = localizar_xpath_elemento_com_fallback_iframe(
             driver,
             'Endereçamento',
             "//p[contains(text(), '@cargo_destinatario@')]",
+            timeout=timeout,
         )
         p_cargo.clear()
 
         # Já estamos no iframe correto (nomeado ou achado por fallback)
-        p_nome: WebElement = WebDriverWait(driver, 10).until(
+        p_nome: WebElement = WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((
                 By.XPATH,
                 "//p[contains(text(), '@nome_destinatario@')]",
             ))
         )
         driver.execute_script(
-            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-            f"'@nome_destinatario@', '{destinatario_nome}');",
-            p_nome,
+            _JS_SUBSTITUIR, p_nome, '@nome_destinatario@', destinatario_nome
         )
 
         driver.switch_to.default_content()
 
         strong_assunto = localizar_xpath_elemento_com_fallback_iframe(
-            driver, 'Assunto', "//p[strong[contains(text(), 'Assunto:')]]"
+            driver,
+            'Assunto',
+            "//p[strong[contains(text(), 'Assunto:')]]",
+            timeout=timeout,
         )
         driver.execute_script(
-            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-            f"'Assunto:', 'Assunto: {assunto}');",
-            strong_assunto,
+            _JS_SUBSTITUIR, strong_assunto, 'Assunto:', f'Assunto: {assunto}'
         )
 
         driver.switch_to.default_content()
@@ -340,11 +335,10 @@ def inserir_conteudo_doc_sei_memo(
             driver,
             'Corpo do Texto',
             "//p[contains(text(), '@vocativo_destinatario@')]",
+            timeout=timeout,
         )
         driver.execute_script(
-            'arguments[0].innerHTML = arguments[0].innerHTML.replace('
-            f"'@vocativo_destinatario@', '{vocativo}');",
-            p_vocativo,
+            _JS_SUBSTITUIR, p_vocativo, '@vocativo_destinatario@', vocativo
         )
 
         # Já estamos no iframe correto de "Corpo do Texto"
@@ -352,20 +346,14 @@ def inserir_conteudo_doc_sei_memo(
             By.XPATH, "//p[contains(text(), 'Atenciosamente,')]"
         )
         driver.execute_script(
-            """
-            arguments[0].innerHTML = arguments[1];
-            """,
-            p_att,
-            '',
+            'arguments[0].innerHTML = arguments[1];', p_att, ''
         )
 
         p_inserir_txt: WebElement = driver.find_element(
             By.XPATH, "//p[contains(text(), '[ Inserir Texto ]')]"
         )
         driver.execute_script(
-            """
-            arguments[0].innerHTML = arguments[1];
-            """,
+            'arguments[0].innerHTML = arguments[1];',
             p_inserir_txt,
             texto_principal,
         )
@@ -374,10 +362,9 @@ def inserir_conteudo_doc_sei_memo(
         time.sleep(3)
 
         driver.switch_to.default_content()
-        body: WebElement = driver.find_element(By.TAG_NAME, 'body')
-        body.click()
+        driver.find_element(By.TAG_NAME, 'body').click()
 
-        button_salvar_doc: WebElement = WebDriverWait(driver, 10).until(
+        button_salvar_doc: WebElement = WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((
                 By.XPATH,
                 "//a[contains(@class, 'cke_button__save')]",
@@ -386,12 +373,15 @@ def inserir_conteudo_doc_sei_memo(
 
         driver.execute_script('arguments[0].click();', button_salvar_doc)
 
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, max(timeout, _TIMEOUT_MIN_SALVAR)).until(
             lambda d: (
                 'cke_button_disabled'
-                in d.find_element(
-                    By.CSS_SELECTOR, 'a.cke_button__save'
-                ).get_attribute('class')
+                in (
+                    d.find_element(
+                        By.CSS_SELECTOR, 'a.cke_button__save'
+                    ).get_attribute('class')
+                    or ''
+                )
             )
         )
 
@@ -399,25 +389,22 @@ def inserir_conteudo_doc_sei_memo(
         driver.switch_to.window(janela_principal)
 
     except Exception:
-        for handle in driver.window_handles:
-            if handle != janela_principal:
-                driver.switch_to.window(handle)
-                driver.close()
-        driver.switch_to.window(janela_principal)
+        _fechar_janelas_extras(driver, janela_principal)
         raise
 
 
 def espera_documento_aparecer_arvore(
-    driver: webdriver.Remote, tipo_doc: str, num: str | None = None
+    driver: webdriver.Remote,
+    tipo_doc: str,
+    num: str | None = None,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    if num:
-        nome_arvore: str = f'{tipo_doc} {num}'
-    else:
-        nome_arvore = tipo_doc
+    nome_arvore = f'{tipo_doc} {num}' if num else tipo_doc
 
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((
             By.XPATH,
-            f"//span[contains(text(), '{nome_arvore}')]",
+            f'//span[contains(text(), {xpath_literal(nome_arvore)})]',
         ))
     )

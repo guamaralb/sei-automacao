@@ -7,6 +7,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from sei_automacao._internal.espera import TIMEOUT_PADRAO
+
 TipoBusca = Literal[
     'ID',
     'XPATH',
@@ -34,7 +36,8 @@ def encontrar_elemento(
     driver: webdriver.Remote,
     tipo_busca: TipoBusca,
     termo_busca: str,
-    timeout: float = 10,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> WebElement | None:
     try:
         by = _MAPA_BY[tipo_busca]

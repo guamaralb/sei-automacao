@@ -1,5 +1,9 @@
+"""Modelos de dados para montar documentos no SEI."""
+
 from dataclasses import dataclass, field
 from typing import Literal
+
+__all__ = ['Memorando']
 
 _CSS_PADRAO = 'Texto_Justificado_Recuo_Primeira_Linha'
 
@@ -14,9 +18,7 @@ class Memorando:
     nome_signatario: str
     cargo_signatario: str
     nivel_acesso: Literal['Restrito', 'Público', 'Sigiloso'] = 'Público'
-    hipotese_legal: (
-        None | Literal['Informação Pessoal (Art. 31 da Lei nº 12.527/2011)']
-    ) = (None,)
+    hipotese_legal: str | None = None
     css_paragrafo: str = _CSS_PADRAO
     paragrafos: list[str] = field(default_factory=list)
 
