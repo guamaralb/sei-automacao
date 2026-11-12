@@ -18,12 +18,16 @@ def acessar_pagina_trocar_unidade(
 
 
 def item_esta_marcado(
-    driver, unidade: str, *, timeout: float = TIMEOUT_PADRAO
+    driver: webdriver.Remote,
+    unidade: str,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
 ) -> bool:
-    xpath_linha = f"//tr[td[normalize-space()='{unidade}']]"
+    """Diz se a unidade já está marcada na lista de troca de unidade."""
+    xpath_linha = f'//tr[td[normalize-space()={xpath_literal(unidade)}]]'
 
     try:
-        linha = WebDriverWait(driver, timeout).until(
+        linha: WebElement = WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.XPATH, xpath_linha))
         )
     except TimeoutException:
@@ -41,21 +45,17 @@ def selecionar_unidade(
     *,
     timeout: float = TIMEOUT_PADRAO,
 ) -> None:
-    if item_esta_marcado(
-        driver=driver,
-        unidade=unidade
-    ):
-        return 
-    
-    else:
-        td_unid: WebElement = WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((
-                By.XPATH,
-                f'//td[contains(text(), {xpath_literal(unidade)})]',
-            ))
-        )
-        td_unid.click()
-        esperar_pagina_carregada(driver, timeout=timeout)
+    if item_esta_marcado(driver, unidade, timeout=timeout):
+        return
+
+    td_unid: WebElement = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((
+            By.XPATH,
+            f'//td[contains(text(), {xpath_literal(unidade)})]',
+        ))
+    )
+    td_unid.click()
+    esperar_pagina_carregada(driver, timeout=timeout)
 
 
 def esperar_pagina_carregada(
