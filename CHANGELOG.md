@@ -28,6 +28,10 @@ o projeto segue [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `acessar_processo` espera a página nova carregar e detecta "Unidade atual
   não possui acesso ao processo" assim que a mensagem aparece.
 - `trocar_iframe` procura o iframe por id, name e title ao mesmo tempo.
+- `trocar_unidade` não abre mais um processo fixo antes da troca, não
+  clica de novo se a unidade já está selecionada e espera a página
+  carregar (em vez de `refresh()` + `sleep(2)`): a primeira pesquisa de
+  processo depois da troca não se perde mais.
 - Mensagens via `logging` em vez de `print`.
 
 ### Corrigido
@@ -39,6 +43,3 @@ o projeto segue [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `enviar_email` com nível de acesso não público não repassava a hipótese
   legal.
 - Nomes com aspas quebravam XPaths e scripts do editor.
-
-### Pendente para a 0.1.0
-- `trocar_unidade` ainda abre um processo fixo antes de trocar a unidade.
