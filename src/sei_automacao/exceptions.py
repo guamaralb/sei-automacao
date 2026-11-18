@@ -6,8 +6,10 @@ não quebrar quem já as trata assim.
 """
 
 __all__ = [
+    'AcaoIndisponivel',
     'AcaoNaoConcluida',
     'DocumentoNaoEncontrado',
+    'DocumentoSemConteudo',
     'ElementoNaoEncontrado',
     'IframeNaoEncontrado',
     'MarcadorNaoEncontrado',
@@ -44,6 +46,11 @@ class DocumentoNaoEncontrado(ElementoNaoEncontrado):
     """O documento procurado não está na árvore do processo."""
 
 
+class DocumentoSemConteudo(IframeNaoEncontrado):
+    """O documento foi aberto, mas não mostra conteúdo (sem o iframe
+    ``ifrVisualizacao``), como o documento cancelado."""
+
+
 class MarcadorNaoEncontrado(ElementoNaoEncontrado, ValueError):
     """O marcador não apareceu (ou não sumiu) depois de salvar."""
 
@@ -58,3 +65,16 @@ class ProcessoNaoReabrivel(SeiAutomacaoException, ValueError):
 
 class AcaoNaoConcluida(SeiAutomacaoException):
     """A ação falhou mesmo depois de várias tentativas."""
+
+
+class AcaoIndisponivel(SeiAutomacaoException):
+    """A ação não está na barra do documento selecionado (ex.: "Excluir" em
+    documento assinado, "Cancelar Documento" em documento já cancelado)."""
+
+    def __init__(self, acao: str, disponiveis: set[str]) -> None:
+        self.acao = acao
+        self.disponiveis = disponiveis
+        super().__init__(
+            f'Ação "{acao}" indisponível no documento selecionado '
+            f'(disponíveis: {", ".join(sorted(disponiveis)) or "nenhuma"})'
+        )

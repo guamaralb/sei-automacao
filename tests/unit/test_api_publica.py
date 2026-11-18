@@ -26,6 +26,7 @@ API_PUBLICA: dict[str, set[str]] = {
         'remover_marcador',
     },
     'sei_automacao.documento': {
+        'acoes_disponiveis_doc',
         'incluir_doc_externo',
         'incluir_doc_sei_simples',
         'incluir_doc_sei_memo',

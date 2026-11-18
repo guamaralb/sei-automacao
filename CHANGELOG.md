@@ -18,6 +18,11 @@ o projeto segue [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `DocumentoNaoEncontrado`, `MarcadorNaoEncontrado`, `OpcaoNaoSuportada`,
   `ProcessoNaoReabrivel`, `AcaoNaoConcluida`.
 - `py.typed`, licença MIT, metadados PEP 621.
+- `documento.acoes_disponiveis_doc`: ações da barra do documento selecionado
+  (ex.: `'Excluir'`, `'Cancelar Documento'`).
+- Exceções `AcaoIndisponivel` (a ação não está na barra do documento) e
+  `DocumentoSemConteudo` (documento sem o iframe do conteúdo, ex.: cancelado;
+  subclasse de `IframeNaoEncontrado`).
 
 ### Alterado
 - Layout `src/`. Passos internos movidos para `sei_automacao._internal`
@@ -35,6 +40,21 @@ o projeto segue [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Mensagens via `logging` em vez de `print`.
 
 ### Corrigido
+- `cancelar_doc` procurava o campo do motivo fora do iframe `ifrVisualizacao`,
+  onde o formulário abre, e nunca cancelava. Agora também espera o SEI salvar
+  e recarregar a árvore, trata o alerta de erro do SEI (`AcaoNaoConcluida`) e
+  levanta `AcaoIndisponivel` sem esperar o `timeout` quando não há a opção.
+- `excluir_doc` esperava o `timeout` inteiro pelo ícone "Excluir" em
+  documento que não pode ser excluído (agora `AcaoIndisponivel` na hora) e
+  voltava antes de a árvore recarregar.
+- `listar_documentos_arvore` falhava com "número inconsistente de pastas"
+  logo depois de cancelar ou excluir um documento: a abertura das pastas
+  espera a árvore terminar de carregar, recomeça se ela recarregar e espera as
+  pastas abrirem.
+- `selecionar_doc_arvore` podia aceitar o iframe do documento anterior (o
+  texto lido era o dele, ou vazio): agora espera a página do documento clicado
+  substituir a anterior. Documento sem conteúdo levanta
+  `DocumentoSemConteudo` na hora.
 - `Memorando.hipotese_legal` tinha `(None,)` (tupla) como padrão.
 - `clicar_img_reabrir_processo` sempre lançava exceção depois de clicar.
 - `remover_marcador` parava no primeiro marcador ausente e nunca acusava

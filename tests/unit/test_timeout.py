@@ -59,6 +59,14 @@ def sem_navegador(monkeypatch):
     return MagicMock(name='driver')
 
 
+def _com_acoes(driver: MagicMock, *acoes: str) -> MagicMock:
+    """Barra do documento com as ``acoes`` (ícones com ``alt``)."""
+    driver.find_elements.return_value = [
+        MagicMock(get_attribute=MagicMock(return_value=acao)) for acao in acoes
+    ]
+    return driver
+
+
 CHAMADAS = {
     'efetuar_login': lambda d, t: sessao.efetuar_login(
         d, 'u', 's', 'o', timeout=t
@@ -116,10 +124,15 @@ CHAMADAS = {
     'incluir_doc_sei_memo': lambda d, t: documento.incluir_doc_sei_memo(
         d, 'Senhor', 'Fulano', 'Assunto', '<p>x</p>', 'Público', timeout=t
     ),
-    'cancelar_doc': lambda d, t: documento.cancelar_doc(
-        d, 'motivo', timeout=t
+    'acoes_disponiveis_doc': lambda d, t: documento.acoes_disponiveis_doc(
+        d, timeout=t
     ),
-    'excluir_doc': lambda d, t: documento.excluir_doc(d, timeout=t),
+    'cancelar_doc': lambda d, t: documento.cancelar_doc(
+        _com_acoes(d, 'Cancelar Documento'), 'motivo', timeout=t
+    ),
+    'excluir_doc': lambda d, t: documento.excluir_doc(
+        _com_acoes(d, 'Excluir'), timeout=t
+    ),
     'inserir_bloco_ass': lambda d, t: documento.inserir_bloco_ass(
         d, '1', timeout=t
     ),

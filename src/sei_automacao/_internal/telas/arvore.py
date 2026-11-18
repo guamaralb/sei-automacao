@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 
@@ -5,19 +6,28 @@ from selenium import webdriver
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
+    TimeoutException,
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sei_automacao._internal.espera import TIMEOUT_PADRAO, xpath_literal
+from sei_automacao._internal.espera import (
+    TIMEOUT_PADRAO,
+    TIMEOUT_SONDAGEM,
+    xpath_literal,
+)
 from sei_automacao._internal.iframes import trocar_iframe
 from sei_automacao.exceptions import (
     AcaoNaoConcluida,
     DocumentoNaoEncontrado,
+    DocumentoSemConteudo,
     ElementoNaoEncontrado,
+    IframeNaoEncontrado,
 )
+
+logger = logging.getLogger(__name__)
 
 # Árvores grandes demoram para abrir todas as pastas
 _TIMEOUT_MIN_PASTAS: float = 30
@@ -33,33 +43,44 @@ def _xpath_pasta(img: str) -> str:
     )
 
 
-def abrir_todas_pastas_arvore(driver: webdriver.Remote) -> int:
-    """Deve ser chamada com o driver já no iframe da árvore."""
-    pastas_fechadas_antes: list[WebElement] = driver.find_elements(
-        By.XPATH, _xpath_pasta(img='processo_fechado.svg')
-    )
-    pastas_abertas_antes: list[WebElement] = driver.find_elements(
-        By.XPATH, _xpath_pasta(img='processo_aberto.svg')
-    )
+def _pastas(driver: webdriver.Remote, img: str) -> list[WebElement]:
+    return driver.find_elements(By.XPATH, _xpath_pasta(img=img))
 
-    qnt_pastas_antes = len(pastas_fechadas_antes) + len(pastas_abertas_antes)
 
-    for pasta in pastas_fechadas_antes:
-        pasta.click()
+def abrir_todas_pastas_arvore(
+    driver: webdriver.Remote, *, timeout: float = TIMEOUT_PADRAO
+) -> int:
+    """Abre as pastas fechadas da árvore e espera todas ficarem abertas.
+    Deve ser chamada com o driver já no iframe da árvore.
+
+    A árvore pode estar recarregando (ex.: logo depois de cancelar ou
+    excluir um documento): espera o "Aguarde..." sumir antes de contar e,
+    se ela recarregar no meio, recomeça. Levanta :class:`AcaoNaoConcluida`
+    se sobrar pasta fechada depois do prazo."""
+    limite = time.monotonic() + max(timeout, _TIMEOUT_MIN_PASTAS)
+    clicadas = False
+    while True:
+        try:
+            espera_pastas_abrirem_e_retorna_elementos(driver, timeout=timeout)
+            fechadas = _pastas(driver, 'processo_fechado.svg')
+            if len(fechadas) == 0:  # lista (também no driver falso dos testes)
+                return len(_pastas(driver, 'processo_aberto.svg'))
+            # Clica uma vez; nas voltas seguintes só espera as pastas
+            # abrirem (clicar de novo fecharia a pasta que está abrindo)
+            if not clicadas:
+                for pasta in fechadas:
+                    pasta.click()
+                    time.sleep(0.5)
+                clicadas = True
+        except StaleElementReferenceException:
+            # A árvore recarregou: as pastas voltam fechadas
+            clicadas = False
+        if time.monotonic() >= limite:
+            raise AcaoNaoConcluida(
+                'Identificado um número inconsistente de pastas na arvore: '
+                'pasta(s) que não abriu(ram) no prazo'
+            )
         time.sleep(0.5)
-
-    pastas_abertas_depois: list[WebElement] = driver.find_elements(
-        By.XPATH, _xpath_pasta(img='processo_aberto.svg')
-    )
-
-    qnt_pastas_depois = len(pastas_abertas_depois)
-
-    if qnt_pastas_antes != qnt_pastas_depois:
-        raise AcaoNaoConcluida(
-            'Identificado um número inconsistente de pastas na arvore'
-        )
-
-    return qnt_pastas_depois
 
 
 def _esta_aguardando(arvore_elements: list[WebElement]) -> bool:
@@ -90,7 +111,7 @@ def listar_documentos_arvore(
     driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrArvore', timeout=timeout)
 
-    abrir_todas_pastas_arvore(driver)
+    abrir_todas_pastas_arvore(driver, timeout=timeout)
 
     # Só para esperar o "Aguarde..." sumir
     espera_pastas_abrirem_e_retorna_elementos(driver, timeout=timeout)
@@ -132,6 +153,69 @@ def listar_documentos_arvore(
     return arvore_list
 
 
+def html_do_iframe(driver: webdriver.Remote, iframe: str) -> WebElement | None:
+    """O ``<html>`` atual do iframe, para esperar ele recarregar
+    (:func:`esperar_iframe_recarregar`). ``None`` se o iframe não existe.
+    Termina no ``default_content``."""
+    driver.switch_to.default_content()
+    try:
+        trocar_iframe(driver, iframe, timeout=TIMEOUT_SONDAGEM)
+    except IframeNaoEncontrado:
+        return None
+    html = driver.find_element(By.TAG_NAME, 'html')
+    driver.switch_to.default_content()
+    return html
+
+
+def esperar_iframe_recarregar(
+    driver: webdriver.Remote,
+    iframe: str,
+    html_antigo: WebElement | None,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
+) -> bool:
+    """Entra no ``iframe`` e espera a página antiga (``html_antigo``, de
+    :func:`html_do_iframe`) sair e a nova terminar de carregar. ``False`` se
+    a página não mudou no prazo (o driver fica no iframe do mesmo jeito)."""
+    driver.switch_to.default_content()
+    trocar_iframe(driver, iframe, timeout=timeout)
+    if html_antigo is not None:
+        try:
+            WebDriverWait(driver, timeout).until(EC.staleness_of(html_antigo))
+        except TimeoutException:
+            logger.debug('iFrame "%s" não recarregou no prazo', iframe)
+            return False
+    WebDriverWait(driver, timeout).until(
+        lambda d: d.execute_script('return document.readyState') == 'complete'
+    )
+    return True
+
+
+def esperar_arvore_recarregar(
+    driver: webdriver.Remote,
+    html_antigo: WebElement | None,
+    *,
+    timeout: float = TIMEOUT_PADRAO,
+) -> None:
+    """Depois de uma ação que recarrega a árvore (cancelar, excluir): espera
+    a árvore nova e o "Aguarde..." sumir. Termina no ``default_content``."""
+    if not esperar_iframe_recarregar(
+        driver, 'ifrArvore', html_antigo, timeout=timeout
+    ):
+        logger.debug('A árvore não recarregou depois da ação')
+    espera_pastas_abrirem_e_retorna_elementos(driver, timeout=timeout)
+    driver.switch_to.default_content()
+
+
+def _tem_ifr_visualizacao(driver: webdriver.Remote) -> bool:
+    return bool(
+        driver.find_elements(
+            By.XPATH,
+            '//iframe[@id="ifrVisualizacao" or @name="ifrVisualizacao"]',
+        )
+    )
+
+
 def selecionar_doc_arvore(
     driver: webdriver.Remote,
     numero_sei: str | None = None,
@@ -141,6 +225,10 @@ def selecionar_doc_arvore(
 ) -> None:
     if numero_sei is None and nome is None:
         raise ValueError('Informe numero_sei ou nome para a busca')
+
+    # Página que está aberta: depois do clique, espera ela ser substituída
+    # (senão o iframe do documento anterior passaria pelo do clicado)
+    conteudo_antigo = html_do_iframe(driver, 'ifrConteudoVisualizacao')
 
     driver.switch_to.default_content()
     trocar_iframe(driver, 'ifrArvore', timeout=timeout)
@@ -167,9 +255,17 @@ def selecionar_doc_arvore(
 
     doc_element.click()
 
-    # Espera o iFrame do documento em si carregar
-    driver.switch_to.default_content()
-    trocar_iframe(driver, 'ifrConteudoVisualizacao', timeout=timeout)
+    # Espera a página do documento clicado carregar e o iFrame do documento
+    # em si. Sem ele (ex.: documento cancelado), DocumentoSemConteudo
+    esperar_iframe_recarregar(
+        driver, 'ifrConteudoVisualizacao', conteudo_antigo, timeout=timeout
+    )
+    if not _tem_ifr_visualizacao(driver):
+        driver.switch_to.default_content()
+        raise DocumentoSemConteudo(
+            f'Documento sem conteúdo para exibir (numero_sei={numero_sei!r}, '
+            f'nome={nome!r}): cancelado?'
+        )
     trocar_iframe(driver, 'ifrVisualizacao', timeout=timeout)
 
     driver.switch_to.default_content()

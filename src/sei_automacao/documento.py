@@ -20,11 +20,13 @@ from sei_automacao._internal import iframes as _iframes
 from sei_automacao._internal import popups as _popups
 from sei_automacao._internal.espera import TIMEOUT_PADRAO as _TIMEOUT_PADRAO
 from sei_automacao._internal.nivel_acesso import NivelAcesso
+from sei_automacao._internal.telas import arvore as _arvore
 from sei_automacao._internal.telas import assinatura as _assinatura
 from sei_automacao._internal.telas import documentos as _documentos
 from sei_automacao._internal.telas import gestao_doc as _gestao_doc
 
 __all__ = [
+    'acoes_disponiveis_doc',
     'cancelar_doc',
     'excluir_doc',
     'incluir_doc_externo',
@@ -189,30 +191,73 @@ def incluir_doc_sei_memo(  # noqa: PLR0913, PLR0917
 # --- Documento selecionado --------------------------------------------------
 
 
+def acoes_disponiveis_doc(
+    driver: webdriver.Remote, *, timeout: float = _TIMEOUT_PADRAO
+) -> set[str]:
+    """Ações da barra do documento selecionado (o texto alternativo dos
+    ícones, ex.: ``'Excluir'``, ``'Cancelar Documento'``). Serve para saber,
+    sem esperar, se o documento pode ser excluído ou cancelado."""
+    driver.switch_to.default_content()
+    _iframes.trocar_iframe(driver, 'ifrConteudoVisualizacao', timeout=timeout)
+    acoes = _gestao_doc.listar_acoes(driver, timeout=timeout)
+    driver.switch_to.default_content()
+    return acoes
+
+
 def cancelar_doc(
     driver: webdriver.Remote,
     motivo: str,
     *,
     timeout: float = _TIMEOUT_PADRAO,
 ) -> None:
-    """Cancela o documento selecionado na árvore."""
+    """Cancela o documento selecionado na árvore e espera o SEI terminar
+    (formulário salvo e árvore recarregada).
+
+    Raises:
+        AcaoIndisponivel: o documento não tem "Cancelar Documento" (ex.: já
+            cancelado ou sem permissão), sem esperar o ``timeout``.
+        AcaoNaoConcluida: o SEI recusou o cancelamento (alerta) ou o
+            formulário não foi salvo no prazo.
+    """
+    arvore = _arvore.html_do_iframe(driver, 'ifrArvore')
     driver.switch_to.default_content()
     _iframes.trocar_iframe(driver, 'ifrConteudoVisualizacao', timeout=timeout)
-    _gestao_doc.selecionar_cancelar_doc(driver, timeout=timeout)
-    _gestao_doc.preencher_motivo_cancelamento(driver, motivo, timeout=timeout)
+    _gestao_doc.clicar_acao(driver, _gestao_doc.ACAO_CANCELAR, timeout=timeout)
+    # O formulário abre no iframe do documento, dentro do atual
+    _iframes.trocar_iframe(driver, 'ifrVisualizacao', timeout=timeout)
+    campo_motivo = _gestao_doc.preencher_motivo_cancelamento(
+        driver, motivo, timeout=timeout
+    )
     _botoes.clicar_salvar_sbmSalvar(driver, timeout=timeout)
-    driver.switch_to.default_content()
+    _gestao_doc.esperar_tela_sair(
+        driver, campo_motivo, 'Cancelar documento', timeout=timeout
+    )
+    _arvore.esperar_arvore_recarregar(driver, arvore, timeout=timeout)
 
 
 def excluir_doc(
     driver: webdriver.Remote, *, timeout: float = _TIMEOUT_PADRAO
 ) -> None:
-    """Exclui o documento selecionado na árvore."""
+    """Exclui o documento selecionado na árvore e espera o SEI terminar
+    (árvore recarregada). A árvore ainda pode mostrar o documento por alguns
+    segundos: confira relendo-a.
+
+    Raises:
+        AcaoIndisponivel: o documento não tem "Excluir" (ex.: assinado, que
+            só pode ser cancelado), sem esperar o ``timeout``.
+        AcaoNaoConcluida: o SEI recusou a exclusão (alerta).
+    """
+    arvore = _arvore.html_do_iframe(driver, 'ifrArvore')
     driver.switch_to.default_content()
     _iframes.trocar_iframe(driver, 'ifrConteudoVisualizacao', timeout=timeout)
-    _gestao_doc.selecionar_excluir_doc(driver, timeout=timeout)
+    link = _gestao_doc.clicar_acao(
+        driver, _gestao_doc.ACAO_EXCLUIR, timeout=timeout
+    )
     _gestao_doc.confirmar_exclusao_doc(driver, timeout=timeout)
-    driver.switch_to.default_content()
+    _gestao_doc.esperar_tela_sair(
+        driver, link, 'Excluir documento', exigir=False, timeout=timeout
+    )
+    _arvore.esperar_arvore_recarregar(driver, arvore, timeout=timeout)
 
 
 def inserir_bloco_ass(

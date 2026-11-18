@@ -23,6 +23,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 from sei_automacao import exceptions as exceptions
 from sei_automacao.documento import (
+    acoes_disponiveis_doc,
     cancelar_doc,
     excluir_doc,
     incluir_doc_externo,
@@ -71,6 +72,7 @@ __all__ = [
     'UnidadeSemAcessoException',
     '__version__',
     'acessar_processo',
+    'acoes_disponiveis_doc',
     'adicionar_marcador',
     'cancelar_doc',
     'concluir_processo',
